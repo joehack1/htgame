@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surface Runner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        
+        #gameContainer {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        canvas {
+            display: block;
+        }
+        
+        .ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 24px;
+        }
+        
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            text-align: center;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+            display: none;
+            border: 3px solid #ff4444;
+        }
+        
+        .restart-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div class="ui">
+            <div>Score: <span id="score">0</span></div>
+            <div style="margin-top: 10px;">Speed: <span id="speed">1.0x</span></div>
+        </div>
+        
+        <div class="controls">
+            <div>← → to move | SPACE to jump</div>
+        </div>
+        
+        <div class="game-over" id="gameOverScreen">
+            <h2 style="color: #ff4444; margin-bottom: 20px;">Game Over</h2>
+            <div>Final Score: <span id="finalScore">0</span></div>
+            <button class="restart-btn" onclick="restartGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas to full screen
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        // Game variables
+        let score = 0;
+        let gameRunning = true;
+        let gameSpeed = 1.0;
+        let particles = [];
+        let lastObstacleTime = 0;
+        let obstacleInterval = 2000; // 2 seconds between obstacles
+        let nextObstacleType = 'block'; // 'block' or 'gap'
+        
+        // Player
+        const player = {
+            x: 100,
+            y: canvas.height - 150,
+            width: 30,
+            height: 30,
+            velocityX: 0,
+            velocityY: 0,
+            speed: 8,
+            jumpPower: 18,
+            isJumping: false,
+            color: '#4CAF50'
+        };
+        
+        // Ground
+        const groundHeight = 100;
+        const groundY = canvas.height - groundHeight;
+        
+        // Obstacles array
+        let obstacles = [];
+        
+        // Input handling
+        const keys = {};
+        
+        // Initialize game
+        function initGame() {
+            score = 0;
+            gameSpeed = 1.0;
+            gameRunning = true;
+            particles = [];
+            obstacles = [];
+            lastObstacleTime = 0;
+            
+            player.x = 100;
+            player.y = groundY - player.height;
+            player.velocityY = 0;
+            player.isJumping = false;
+            
+            document.getElementById('gameOverScreen').style.display = 'none';
+            document.getElementById('score').textContent = score;
+            document.getElementById('speed').textContent = gameSpeed.toFixed(1) + 'x';
+            
+            // Create first obstacle after delay
+            setTimeout(() => {
+                createObstacle();
+            }, 1000);
+        }
+        
+        function createObstacle() {
+            if (!gameRunning) return;
+            
+            const currentTime = Date.now();
+            if (currentTime - lastObstacleTime < obstacleInterval) {
+                return;
+            }
+            
+            lastObstacleTime = currentTime;
+            
+            // Alternate between blocks and gaps
+            if (nextObstacleType === 'block') {
+                // Create a block obstacle
+                const width = 60 + Math.random() * 60;
+                const height = 40 + Math.random() * 60;
+                
+                obstacles.push({
+                    x: canvas.width,
+                    y: groundY - height,
+                    width: width,
+                    height: height,
+                    type: 'block',
+                    color: '#FF5722',
+                    speed: 4 * gameSpeed
+                });
+                
+                nextObstacleType = 'gap';
+            } else {
+                // Create a gap (hole in ground)
+                const gapWidth = 80 + Math.random() * 100;
+                
+                obstacles.push({
+                    x: canvas.width,
+                    y: groundY,
+                    width: gapWidth,
+                    height: groundHeight,
+                    type: 'gap',
+                    color: '#000',
+                    speed: 4 * gameSpeed
+                });
+                
+                nextObstacleType = 'block';
+            }
+            
+            // Increase speed and decrease interval gradually
+            gameSpeed += 0.05;
+            obstacleInterval = Math.max(800, 2000 / gameSpeed); // Minimum 0.8 seconds between obstacles
+            
+            document.getElementById('speed').textContent = gameSpeed.toFixed(1) + 'x';
+            
+            // Schedule next obstacle
+            setTimeout(createObstacle, obstacleInterval);
+        }
+        
+        function update() {
+            if (!gameRunning) return;
+            
+            // Apply gravity
+            player.velocityY += 0.8;
+            
+            // Handle horizontal movement
+            player.velocityX = 0;
+            if (keys['ArrowLeft'] || keys['a']) player.velocityX = -player.speed;
+            if (keys['ArrowRight'] || keys['d']) player.velocityX = player.speed;
+            
+            // Handle jumping
+            if ((keys['ArrowUp'] || keys[' '] || keys['w']) && !player.isJumping) {
+                player.velocityY = -player.jumpPower;
+                player.isJumping = true;
+            }
+            
+            // Update player position
+            player.x += player.velocityX;
+            player.y += player.velocityY;
+            
+            // Boundary checks
+            if (player.x < 0) player.x = 0;
+            if (player.x > canvas.width - player.width) player.x = canvas.width - player.width;
+            
+            // Ground collision
+            if (player.y > groundY - player.height) {
+                player.y = groundY - player.height;
+                player.velocityY = 0;
+                player.isJumping = false;
+            }
+            
+            // Update obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obstacle = obstacles[i];
+                
+                // Move obstacle
+                obstacle.x -= obstacle.speed;
+                
+                // Check collision based on obstacle type
+                let collision = false;
+                
+                if (obstacle.type === 'block') {
+                    // Block collision
+                    if (player.x < obstacle.x + obstacle.width &&
+                        player.x + player.width > obstacle.x &&
+                        player.y < obstacle.y + obstacle.height &&
+                        player.y + player.height > obstacle.y) {
+                        collision = true;
+                    }
+                } else if (obstacle.type === 'gap') {
+                    // Gap collision - player falls through
+                    if (player.x > obstacle.x && 
+                        player.x < obstacle.x + obstacle.width &&
+                        player.y + player.height > groundY - groundHeight) {
+                        collision = true;
+                    }
+                }
+                
+                if (collision) {
+                    createParticleExplosion(player.x + player.width/2, player.y + player.height/2);
+                    gameRunning = false;
+                    showGameOver();
+                    return;
+                }
+                
+                // Remove obstacle when off screen
+                if (obstacle.x + obstacle.width < 0) {
+                    obstacles.splice(i, 1);
+                    score += Math.floor(10 * gameSpeed);
+                    document.getElementById('score').textContent = score;
+                }
+            }
+            
+            // Update particles
+            updateParticles();
+        }
+        
+        function createParticleExplosion(x, y) {
+            // Create 20-30 particles
+            const particleCount = 20 + Math.floor(Math.random() * 11);
+            const colors = ['#4CAF50', '#8BC34A', '#CDDC39', player.color];
+            
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    size: 4 + Math.random() * 8,
+                    velocityX: (Math.random() - 0.5) * 15,
+                    velocityY: (Math.random() - 0.5) * 15 - 5, // Upward bias
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    life: 1.0,
+                    decay: 0.02 + Math.random() * 0.03
+                });
+            }
+        }
+        
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                
+                // Update position
+                p.x += p.velocityX;
+                p.y += p.velocityY;
+                
+                // Apply gravity
+                p.velocityY += 0.3;
+                
+                // Apply friction
+                p.velocityX *= 0.98;
+                p.velocityY *= 0.98;
+                
+                // Decrease life
+                p.life -= p.decay;
+                
+                // Remove dead particles
+                if (p.life <= 0 || p.y > canvas.height + 100) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+        
+        function draw() {
+            // Clear canvas with gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#001219');
+            gradient.addColorStop(1, '#000');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw stars
+            drawStars();
+            
+            // Draw ground
+            ctx.fillStyle = '#333';
+            ctx.fillRect(0, groundY, canvas.width, groundHeight);
+            
+            // Draw ground pattern
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 2;
+            for (let x = 0; x < canvas.width; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x, groundY);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            // Draw obstacles
+            obstacles.forEach(obstacle => {
+                if (obstacle.type === 'block') {
+                    // Draw block with 3D effect
+                    ctx.fillStyle = obstacle.color;
+                    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                    
+                    // Block highlights
+                    ctx.fillStyle = '#FF7043';
+                    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, 5);
+                    ctx.fillRect(obstacle.x, obstacle.y, 5, obstacle.height);
+                    
+                    // Block shadow
+                    ctx.fillStyle = '#D84315';
+                    ctx.fillRect(obstacle.x + obstacle.width - 5, obstacle.y, 5, obstacle.height);
+                    ctx.fillRect(obstacle.x, obstacle.y + obstacle.height - 5, obstacle.width, 5);
+                    
+                } else if (obstacle.type === 'gap') {
+                    // Draw gap (hole)
+                    ctx.fillStyle = '#111';
+                    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                    
+                    // Gap edges
+                    ctx.fillStyle = '#222';
+                    ctx.fillRect(obstacle.x - 2, groundY - 20, 4, 20);
+                    ctx.fillRect(obstacle.x + obstacle.width - 2, groundY - 20, 4, 20);
+                    
+                    // Gap interior lines
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(obstacle.x, groundY + 20);
+                    ctx.lineTo(obstacle.x + obstacle.width, groundY + 20);
+                    ctx.stroke();
+                }
+            });
+            
+            // Draw particles
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+            
+            // Draw player if game is running
+            if (gameRunning) {
+                // Player shadow
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.beginPath();
+                ctx.arc(player.x + player.width/2 + 3, player.y + player.height/2 + 3, 
+                       player.width/2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Player main body
+                ctx.fillStyle = player.color;
+                ctx.beginPath();
+                ctx.arc(player.x + player.width/2, player.y + player.height/2, 
+                       player.width/2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Player highlight
+                ctx.strokeStyle = '#A5D6A7';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(player.x + player.width/2, player.y + player.height/2, 
+                       player.width/2, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Player face (simple)
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(player.x + player.width/2 - 5, player.y + player.height/2 - 5, 4, 0, Math.PI * 2);
+                ctx.arc(player.x + player.width/2 + 5, player.y + player.height/2 - 5, 4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Player mouth
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(player.x + player.width/2, player.y + player.height/2 + 5, 6, 0.2, Math.PI - 0.2);
+                ctx.stroke();
+            }
+        }
+        
+        function drawStars() {
+            ctx.fillStyle = 'white';
+            for (let i = 0; i < 100; i++) {
+                const x = (i * 13) % canvas.width;
+                const y = (i * 7) % (canvas.height - groundHeight);
+                const size = 1 + Math.sin(Date.now() * 0.001 + i) * 0.5;
+                
+                ctx.globalAlpha = 0.5 + Math.sin(Date.now() * 0.001 + i * 0.1) * 0.3;
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1.0;
+        }
+        
+        function showGameOver() {
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOverScreen').style.display = 'block';
+        }
+        
+        function restartGame() {
+            initGame();
+        }
+        
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ') e.preventDefault(); // Prevent spacebar scrolling
+            keys[e.key] = true;
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+        
+        // Touch controls for mobile
+        let touchStartX = 0;
+        
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            touchStartX = e.touches[0].clientX;
+            
+            // Jump on any touch
+            if (!keys[' ']) {
+                keys[' '] = true;
+                setTimeout(() => keys[' '] = false, 100);
+            }
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touchX = e.touches[0].clientX;
+            const diff = touchX - touchStartX;
+            
+            // Move based on touch position
+            if (diff > 20) {
+                keys['ArrowRight'] = true;
+                keys['ArrowLeft'] = false;
+            } else if (diff < -20) {
+                keys['ArrowLeft'] = true;
+                keys['ArrowRight'] = false;
+            } else {
+                keys['ArrowLeft'] = false;
+                keys['ArrowRight'] = false;
+            }
+        });
+        
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            keys['ArrowLeft'] = false;
+            keys['ArrowRight'] = false;
+            touchStartX = 0;
+        });
+        
+        // Start the game
+        initGame();
+        gameLoop();
+    </script>
+</body>
+</html>
