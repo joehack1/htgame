@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Retro Gaming Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --neon-blue: #0af;
+            --neon-green: #0f0;
+            --neon-pink: #f0f;
+            --neon-yellow: #ff0;
+            --neon-red: #f00;
+            --dark-bg: #000;
+            --card-bg: #111;
+            --grid-color: rgba(0, 170, 255, 0.1);
+        }
+
+        body {
+            font-family: 'VT323', monospace;
+            background-color: var(--dark-bg);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header Styles */
+        header {
+            text-align: center;
+            padding: 20px 0 40px;
+            border-bottom: 3px solid var(--neon-blue);
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 2.8rem;
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue); }
+            to { text-shadow: 0 0 15px var(--neon-blue), 0 0 30px var(--neon-blue), 0 0 40px var(--neon-blue); }
+        }
+
+        .subtitle {
+            font-size: 1.8rem;
+            color: var(--neon-green);
+            margin-bottom: 20px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            color: var(--neon-yellow);
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        .stat-label {
+            font-size: 1.2rem;
+            color: var(--neon-pink);
+        }
+
+        /* Game Grid */
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .game-card {
+            background-color: var(--card-bg);
+            border: 2px solid var(--neon-blue);
+            border-radius: 5px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            position: relative;
+            height: 280px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .game-card:hover {
+            transform: translateY(-10px) scale(1.03);
+            border-color: var(--neon-green);
+            box-shadow: 0 0 20px var(--neon-green);
+            z-index: 10;
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-green), var(--neon-pink), var(--neon-yellow));
+            z-index: 2;
+        }
+
+        .game-thumbnail {
+            height: 140px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-thumbnail::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.8));
+        }
+
+        .game-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.1rem;
+            padding: 12px 15px 5px;
+            color: var(--neon-yellow);
+            background-color: rgba(0, 0, 0, 0.7);
+            border-bottom: 1px solid var(--neon-blue);
+        }
+
+        .game-info {
+            padding: 15px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .game-description {
+            font-size: 1.2rem;
+            color: #ccc;
+            margin-bottom: 15px;
+            line-height: 1.3;
+            flex-grow: 1;
+        }
+
+        .game-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .game-year {
+            font-size: 1.1rem;
+            color: var(--neon-pink);
+            background-color: rgba(0,0,0,0.7);
+            padding: 3px 8px;
+            border-radius: 3px;
+        }
+
+        .play-btn {
+            background-color: var(--neon-green);
+            color: #000;
+            border: none;
+            padding: 8px 15px;
+            font-family: 'VT323', monospace;
+            font-size: 1.3rem;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .play-btn:hover {
+            background-color: var(--neon-blue);
+            color: white;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        /* Mini Game Containers */
+        .mini-game-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .mini-game {
+            background-color: var(--card-bg);
+            border: 3px solid var(--neon-blue);
+            border-radius: 5px;
+            padding: 20px;
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .mini-game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--neon-green);
+            padding-bottom: 10px;
+        }
+
+        .mini-game-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.5rem;
+            color: var(--neon-yellow);
+        }
+
+        .close-btn {
+            background-color: var(--neon-red);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            border-radius: 3px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .close-btn:hover {
+            background-color: #ff4444;
+        }
+
+        /* Game-specific canvases */
+        #tetris-canvas, #pong-canvas, #pacman-canvas {
+            background-color: #000;
+            display: block;
+            margin: 0 auto;
+            border: 2px solid var(--neon-blue);
+        }
+
+        .game-instructions {
+            color: #ccc;
+            font-size: 1.2rem;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            border-top: 2px solid var(--neon-pink);
+            margin-top: 40px;
+            font-size: 1.2rem;
+            color: #aaa;
+        }
+
+        .footer-text {
+            margin-bottom: 15px;
+        }
+
+        .footer-icons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            font-size: 1.5rem;
+        }
+
+        .footer-icons i {
+            color: var(--neon-blue);
+            transition: color 0.3s;
+        }
+
+        .footer-icons i:hover {
+            color: var(--neon-green);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-title {
+                font-size: 1.8rem;
+            }
+            
+            .subtitle {
+                font-size: 1.4rem;
+            }
+            
+            .game-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+            
+            .game-card {
+                height: 260px;
+            }
+            
+            .game-thumbnail {
+                height: 120px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-title {
+                font-size: 1.5rem;
+            }
+            
+            .game-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                gap: 15px;
+            }
+            
+            .stat-value {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 class="header-title">NEON RETRO GAMING HUB</h1>
+            <p class="subtitle">Classic Games • Pixel Perfect • Play Now</p>
+            
+            <div class="stats">
+                <div class="stat">
+                    <span class="stat-value">24</span>
+                    <span class="stat-label">CLASSIC GAMES</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value">8</span>
+                    <span class="stat-label">PLAYABLE DEMOS</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value">1985</span>
+                    <span class="stat-label">RETRO VIBES</span>
+                </div>
+            </div>
+        </header>
+        
+        <main>
+            <div class="game-grid" id="gameGrid">
+                <!-- Game cards will be generated by JavaScript -->
+            </div>
+        </main>
+        
+        <footer>
+            <p class="footer-text">RETRO GAMING HUB • PRESS START TO CONTINUE</p>
+            <p class="footer-text">All game assets and trademarks are property of their respective owners.</p>
+            <div class="footer-icons">
+                <i class="fas fa-gamepad"></i>
+                <i class="fas fa-joystick"></i>
+                <i class="fas fa-headset"></i>
+                <i class="fas fa-trophy"></i>
+                <i class="fas fa-music"></i>
+            </div>
+        </footer>
+    </div>
+    
+    <!-- Mini Game Containers -->
+    <div class="mini-game-container" id="tetris-game">
+        <div class="mini-game">
+            <div class="mini-game-header">
+                <h2 class="mini-game-title">TETRIS</h2>
+                <button class="close-btn" onclick="closeGame('tetris-game')">×</button>
+            </div>
+            <canvas id="tetris-canvas" width="300" height="500"></canvas>
+            <p class="game-instructions">CONTROLS: ← → to move, ↑ to rotate, ↓ to speed up</p>
+        </div>
+    </div>
+    
+    <div class="mini-game-container" id="pong-game">
+        <div class="mini-game">
+            <div class="mini-game-header">
+                <h2 class="mini-game-title">PONG</h2>
+                <button class="close-btn" onclick="closeGame('pong-game')">×</button>
+            </div>
+            <canvas id="pong-canvas" width="500" height="300"></canvas>
+            <p class="game-instructions">CONTROLS: W/S for left paddle, ↑/↓ for right paddle</p>
+        </div>
+    </div>
+    
+    <div class="mini-game-container" id="pacman-game">
+        <div class="mini-game">
+            <div class="mini-game-header">
+                <h2 class="mini-game-title">PAC-MAN</h2>
+                <button class="close-btn" onclick="closeGame('pacman-game')">×</button>
+            </div>
+            <canvas id="pacman-canvas" width="400" height="400"></canvas>
+            <p class="game-instructions">CONTROLS: ← → ↑ ↓ to move Pac-Man</p>
+        </div>
+    </div>
+    
+    <audio id="hover-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-retro-game-emergency-alarm-1000.mp3" preload="auto"></audio>
+    <audio id="click-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-unlock-game-notification-253.mp3" preload="auto"></audio>
+
+    <script>
+        // Game data
+        const games = [
+            {
+                id: "mario3",
+                title: "SUPER MARIO BROS. 3",
+                year: "1990",
+                description: "Platforming perfection with the Raccoon Leaf power-up.",
+                thumbnail: "https://images.unsplash.com/photo-1551103782-8ab07afd45c1?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+                color: "#E52521",
+                playable: false
+            },
+            {
+                id: "zelda",
+                title: "THE LEGEND OF ZELDA",
+                year: "1998",
+                description: "Epic adventure as Link to rescue Princess Zelda.",
+                thumbnail: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+                color: "#5CB270",
+                playable: false
+            },
+            {
+                id: "metroid",
+                title: "SUPER METROID",
+                year: "1994",
+                description: "Explore planet Zebes as bounty hunter Samus Aran.",
+                thumbnail: "https://images.unsplash.com/photo-1534423861386-85a16f5d13fd?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+                color: "#6A5ACD",
+                playable: false
+            },
+            {
+                id: "sonic",
+                title: "SONIC THE HEDGEHOG 2",
+                year: "1992",
+                description: "Speed through zones with Sonic and Tails.",
+                thumbnail: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+                color: "#1E90FF",
+                playable: false
+            },
+            {
+                id: "streetfighter",
+                title: "STREET FIGHTER II",
+                year: "1991",
+                description: "Fight as Ryu, Chun-Li and more in this arcade classic.",
+                thumbnail: "https://images.unsplash.com/photo-1593305841991-05c297ba4575?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+                color: "#FF4500",
+                playable: false
+            },
+            {
+                id: "marioworld",
+                title: "SUPER MARIO WORLD",
+                year: "1990",
+                description: "Mario and Yoshi explore Dinosaur Land.",
+                thumbnail: "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+                color: "#E52521",
+                playable: false
+            },
+            {
+                id: "doom",
+                title: "DOOM",
+                year: "1993",
+                description: "First-person shooter battling demons from Hell.",
+                thumbnail: "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+                color: "#8B0000",
+                playable: false
+            },
+            {
+                id: "pacman",
+                title: "PAC-MAN",
+                year: "1980",
+                description: "Navigate mazes while eating dots and avoiding ghosts.",
+                thumbnail: "https://images.unsplash.com/photo-1534423861386-85a16f5d13fd?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+                color: "#FFD700",
+                playable: true,
+                gameType: "pacman"
+            },
+            {
+                id: "ff7",
+                title: "FINAL FANTASY VII",
+                year: "1997",
+                description: "Epic RPG with Cloud, Sephiroth and materia system.",
+                thumbnail: "https://images.unsplash.com/photo-1511512578047-dfb367046420?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+                color: "#32CD32",
+                playable: false
+            },
+            {
+                id: "tetris",
+                title: "TETRIS",
+                year: "1984",
+                description: "Arrange falling blocks to complete lines.",
+                thumbnail: "https://images.unsplash.com/photo-1533237264986-2c42f66b45c9?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+                color: "#00BFFF",
+                playable: true,
+                gameType: "tetris"
+            },
+            {
+                id: "castlevania",
+                title: "CASTLEVANIA",
+                year: "1986",
+                description: "Whip-vampire action in Dracula's castle.",
+                thumbnail: "https://images.unsplash.com/photo-1593305841991-05c297ba4575?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+                color: "#8B0000",
+                playable: false
+            },
+            {
+                id: "goldeneye",
+                title: "GOLDENEYE 007",
+                year: "1997",
+                description: "First-person shooter based on James Bond film.",
+                thumbnail: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+                color: "#FFD700",
+                playable: false
+            },
+            {
+                id: "megaman",
+                title: "MEGA MAN 2",
+                year: "1988",
+                description: "Run and gun as the Blue Bomber against Dr. Wily.",
+                thumbnail: "https://images.unsplash.com/photo-1533237264986-2c42f66b45c9?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+                color: "#1E90FF",
+                playable: false
+            },
+            {
+                id: "mario64",
+                title: "SUPER MARIO 64",
+                year: "1996",
+                description: "3D platforming in Peach's castle paintings.",
+                thumbnail: "https://images.unsplash.com/photo-1551103782-8ab07afd45c1?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+                color: "#E52521",
+                playable: false
+            },
+            {
+                id: "pong",
+                title: "PONG",
+                year: "1972",
+                description: "Classic table tennis simulation game.",
+                thumbnail: "https://images.unsplash.com/photo-1534423861386-85a16f5d13fd?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+                color: "#FFFFFF",
+                playable: true,
+                gameType: "pong"
+            },
+            {
+                id: "spaceinvaders",
+                title: "SPACE INVADERS",
+                year: "1978",
+                description: "Shoot descending aliens with your laser cannon.",
+                thumbnail: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+                color: "#32CD32",
+                playable: false
+            }
+        ];
+
+        // DOM Elements
+        const gameGrid = document.getElementById('gameGrid');
+        const hoverSound = document.getElementById('hover-sound');
+        const clickSound = document.getElementById('click-sound');
+
+        // Generate game cards
+        function generateGameCards() {
+            games.forEach(game => {
+                const card = document.createElement('div');
+                card.className = 'game-card';
+                card.dataset.id = game.id;
+                
+                card.innerHTML = `
+                    <div class="game-thumbnail" style="background-image: url('${game.thumbnail}'); background-color: ${game.color};"></div>
+                    <h3 class="game-title">${game.title}</h3>
+                    <div class="game-info">
+                        <p class="game-description">${game.description}</p>
+                        <div class="game-controls">
+                            <span class="game-year">${game.year}</span>
+                            ${game.playable ? 
+                                `<button class="play-btn" onclick="playGame('${game.id}')">PLAY NOW</button>` : 
+                                `<button class="play-btn" style="background-color: #666;">DEMO SOON</button>`
+                            }
+                        </div>
+                    </div>
+                `;
+                
+                // Add hover effects with sound
+                card.addEventListener('mouseenter', () => {
+                    card.style.borderColor = game.color;
+                    card.style.boxShadow = `0 0 20px ${game.color}`;
+                    
+                    // Play hover sound
+                    hoverSound.currentTime = 0;
+                    hoverSound.volume = 0.3;
+                    hoverSound.play();
+                });
+                
+                card.addEventListener('mouseleave', () => {
+                    card.style.borderColor = 'var(--neon-blue)';
+                    card.style.boxShadow = 'none';
+                });
+                
+                gameGrid.appendChild(card);
+            });
+        }
+
+        // Play game function
+        function playGame(gameId) {
+            const game = games.find(g => g.id === gameId);
+            
+            if (!game || !game.playable) {
+                // For non-playable games, show a message
+                alert(`The ${game.title} demo is coming soon! Try one of the playable games.`);
+                return;
+            }
+            
+            // Play click sound
+            clickSound.currentTime = 0;
+            clickSound.volume = 0.5;
+            clickSound.play();
+            
+            // Show the appropriate game container
+            if (game.gameType === 'tetris') {
+                document.getElementById('tetris-game').style.display = 'flex';
+                initTetris();
+            } else if (game.gameType === 'pong') {
+                document.getElementById('pong-game').style.display = 'flex';
+                initPong();
+            } else if (game.gameType === 'pacman') {
+                document.getElementById('pacman-game').style.display = 'flex';
+                initPacman();
+            }
+        }
+
+        // Close game function
+        function closeGame(gameId) {
+            document.getElementById(gameId).style.display = 'none';
+            
+            // Pause any ongoing game loops
+            if (typeof tetrisInterval !== 'undefined') {
+                clearInterval(tetrisInterval);
+            }
+            if (typeof pongAnimationId !== 'undefined') {
+                cancelAnimationFrame(pongAnimationId);
+            }
+            if (typeof pacmanAnimationId !== 'undefined') {
+                cancelAnimationFrame(pacmanAnimationId);
+            }
+        }
+
+        // Tetris Game
+        let tetrisInterval;
+        function initTetris() {
+            const canvas = document.getElementById('tetris-canvas');
+            const ctx = canvas.getContext('2d');
+            const grid = 20;
+            let piece = null;
+            let score = 0;
+            
+            // Clear any existing interval
+            if (tetrisInterval) clearInterval(tetrisInterval);
+            
+            // Simple tetromino shapes
+            const tetrominos = [
+                [[1,1,1,1]], // I
+                [[1,1],[1,1]], // O
+                [[0,1,0],[1,1,1]], // T
+                [[1,1,0],[0,1,1]], // Z
+                [[0,1,1],[1,1,0]]  // S
+            ];
+            
+            // Create a random piece
+            function createPiece() {
+                const type = Math.floor(Math.random() * tetrominos.length);
+                return {
+                    shape: tetrominos[type],
+                    x: Math.floor(canvas.width / grid / 2) - 1,
+                    y: 0
+                };
+            }
+            
+            // Draw the piece
+            function drawPiece() {
+                ctx.fillStyle = '#0af';
+                for (let row = 0; row < piece.shape.length; row++) {
+                    for (let col = 0; col < piece.shape[row].length; col++) {
+                        if (piece.shape[row][col]) {
+                            ctx.fillRect(
+                                (piece.x + col) * grid, 
+                                (piece.y + row) * grid, 
+                                grid-1, 
+                                grid-1
+                            );
+                        }
+                    }
+                }
+            }
+            
+            // Clear the canvas
+            function clearCanvas() {
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+            
+            // Game loop
+            function gameLoop() {
+                clearCanvas();
+                
+                if (!piece) {
+                    piece = createPiece();
+                }
+                
+                // Move piece down
+                piece.y += 0.05;
+                
+                // If piece hits bottom, create new piece
+                if (piece.y + piece.shape.length > canvas.height / grid) {
+                    piece = createPiece();
+                    score += 10;
+                }
+                
+                drawPiece();
+                
+                // Draw score
+                ctx.fillStyle = '#0f0';
+                ctx.font = '20px "Press Start 2P"';
+                ctx.fillText(`SCORE: ${Math.floor(score)}`, 10, 30);
+            }
+            
+            piece = createPiece();
+            tetrisInterval = setInterval(gameLoop, 50);
+        }
+
+        // Pong Game
+        let pongAnimationId;
+        function initPong() {
+            const canvas = document.getElementById('pong-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Game objects
+            const ball = {
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                radius: 10,
+                speedX: 3,
+                speedY: 2,
+                color: '#0f0'
+            };
+            
+            const leftPaddle = {
+                x: 10,
+                y: canvas.height / 2 - 40,
+                width: 10,
+                height: 80,
+                color: '#0af',
+                speed: 5
+            };
+            
+            const rightPaddle = {
+                x: canvas.width - 20,
+                y: canvas.height / 2 - 40,
+                width: 10,
+                height: 80,
+                color: '#f0f',
+                speed: 5
+            };
+            
+            let leftScore = 0;
+            let rightScore = 0;
+            
+            // Keyboard controls
+            const keys = {};
+            
+            document.addEventListener('keydown', (e) => {
+                keys[e.key] = true;
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                keys[e.key] = false;
+            });
+            
+            // Draw function
+            function draw() {
+                // Clear canvas
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw center line
+                ctx.strokeStyle = '#333';
+                ctx.setLineDash([5, 15]);
+                ctx.beginPath();
+                ctx.moveTo(canvas.width / 2, 0);
+                ctx.lineTo(canvas.width / 2, canvas.height);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Draw ball
+                ctx.fillStyle = ball.color;
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw paddles
+                ctx.fillStyle = leftPaddle.color;
+                ctx.fillRect(leftPaddle.x, leftPaddle.y, leftPaddle.width, leftPaddle.height);
+                
+                ctx.fillStyle = rightPaddle.color;
+                ctx.fillRect(rightPaddle.x, rightPaddle.y, rightPaddle.width, rightPaddle.height);
+                
+                // Draw scores
+                ctx.fillStyle = '#fff';
+                ctx.font = '30px "Press Start 2P"';
+                ctx.fillText(leftScore, canvas.width / 4, 40);
+                ctx.fillText(rightScore, 3 * canvas.width / 4, 40);
+            }
+            
+            // Update function
+            function update() {
+                // Move paddles
+                if (keys['w'] && leftPaddle.y > 0) {
+                    leftPaddle.y -= leftPaddle.speed;
+                }
+                if (keys['s'] && leftPaddle.y + leftPaddle.height < canvas.height) {
+                    leftPaddle.y += leftPaddle.speed;
+                }
+                if (keys['ArrowUp'] && rightPaddle.y > 0) {
+                    rightPaddle.y -= rightPaddle.speed;
+                }
+                if (keys['ArrowDown'] && rightPaddle.y + rightPaddle.height < canvas.height) {
+                    rightPaddle.y += rightPaddle.speed;
+                }
+                
+                // Move ball
+                ball.x += ball.speedX;
+                ball.y += ball.speedY;
+                
+                // Ball collision with top/bottom
+                if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
+                    ball.speedY = -ball.speedY;
+                }
+                
+                // Ball collision with paddles
+                if (ball.x - ball.radius < leftPaddle.x + leftPaddle.width && 
+                    ball.y > leftPaddle.y && 
+                    ball.y < leftPaddle.y + leftPaddle.height) {
+                    ball.speedX = Math.abs(ball.speedX);
+                }
+                
+                if (ball.x + ball.radius > rightPaddle.x && 
+                    ball.y > rightPaddle.y && 
+                    ball.y < rightPaddle.y + rightPaddle.height) {
+                    ball.speedX = -Math.abs(ball.speedX);
+                }
+                
+                // Ball out of bounds
+                if (ball.x < 0) {
+                    rightScore++;
+                    resetBall();
+                }
+                
+                if (ball.x > canvas.width) {
+                    leftScore++;
+                    resetBall();
+                }
+            }
+            
+            function resetBall() {
+                ball.x = canvas.width / 2;
+                ball.y = canvas.height / 2;
+                ball.speedX = 3 * (Math.random() > 0.5 ? 1 : -1);
+                ball.speedY = 2 * (Math.random() > 0.5 ? 1 : -1);
+            }
+            
+            // Game loop
+            function gameLoop() {
+                update();
+                draw();
+                pongAnimationId = requestAnimationFrame(gameLoop);
+            }
+            
+            resetBall();
+            gameLoop();
+        }
+
+        // Pac-Man Game
+        let pacmanAnimationId;
+        function initPacman() {
+            const canvas = document.getElementById('pacman-canvas');
+            const ctx = canvas.getContext('2d');
+            const gridSize = 20;
+            
+            // Pac-Man object
+            const pacman = {
+                x: 10,
+                y: 10,
+                radius: gridSize / 2 - 2,
+                mouth: 0,
+                mouthSpeed: 0.2,
+                direction: 'right',
+                nextDirection: 'right'
+            };
+            
+            // Dots
+            const dots = [];
+            for (let row = 0; row < canvas.height / gridSize; row++) {
+                for (let col = 0; col < canvas.width / gridSize; col++) {
+                    // Skip center area
+                    if (row > 8 && row < 12 && col > 8 && col < 12) continue;
+                    dots.push({x: col, y: row});
+                }
+            }
+            
+            // Keyboard controls
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft') pacman.nextDirection = 'left';
+                if (e.key === 'ArrowRight') pacman.nextDirection = 'right';
+                if (e.key === 'ArrowUp') pacman.nextDirection = 'up';
+                if (e.key === 'ArrowDown') pacman.nextDirection = 'down';
+            });
+            
+            // Draw function
+            function draw() {
+                // Clear canvas
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw dots
+                ctx.fillStyle = '#ff0';
+                dots.forEach(dot => {
+                    ctx.beginPath();
+                    ctx.arc(
+                        dot.x * gridSize + gridSize / 2,
+                        dot.y * gridSize + gridSize / 2,
+                        3, 0, Math.PI * 2
+                    );
+                    ctx.fill();
+                });
+                
+                // Draw Pac-Man
+                ctx.fillStyle = '#ff0';
+                ctx.beginPath();
+                
+                let startAngle, endAngle;
+                pacman.mouth += pacman.mouthSpeed;
+                if (pacman.mouth > 0.7) pacman.mouthSpeed = -0.2;
+                if (pacman.mouth < 0) pacman.mouthSpeed = 0.2;
+                
+                if (pacman.direction === 'right') {
+                    startAngle = 0.2 + pacman.mouth;
+                    endAngle = Math.PI * 2 - 0.2 - pacman.mouth;
+                } else if (pacman.direction === 'left') {
+                    startAngle = Math.PI + 0.2 + pacman.mouth;
+                    endAngle = Math.PI * 3 - 0.2 - pacman.mouth;
+                } else if (pacman.direction === 'up') {
+                    startAngle = Math.PI * 1.5 + 0.2 + pacman.mouth;
+                    endAngle = Math.PI * 3.5 - 0.2 - pacman.mouth;
+                } else if (pacman.direction === 'down') {
+                    startAngle = Math.PI * 0.5 + 0.2 + pacman.mouth;
+                    endAngle = Math.PI * 2.5 - 0.2 - pacman.mouth;
+                }
+                
+                ctx.arc(
+                    pacman.x * gridSize + gridSize / 2,
+                    pacman.y * gridSize + gridSize / 2,
+                    pacman.radius,
+                    startAngle,
+                    endAngle
+                );
+                ctx.lineTo(
+                    pacman.x * gridSize + gridSize / 2,
+                    pacman.y * gridSize + gridSize / 2
+                );
+                ctx.fill();
+                
+                // Draw score
+                ctx.fillStyle = '#0f0';
+                ctx.font = '20px "Press Start 2P"';
+                ctx.fillText(`DOTS: ${dots.length}`, 10, 30);
+            }
+            
+            // Update function
+            function update() {
+                // Update direction
+                pacman.direction = pacman.nextDirection;
+                
+                // Move Pac-Man
+                if (pacman.direction === 'left' && pacman.x > 0) pacman.x -= 0.1;
+                if (pacman.direction === 'right' && pacman.x < canvas.width / gridSize - 1) pacman.x += 0.1;
+                if (pacman.direction === 'up' && pacman.y > 0) pacman.y -= 0.1;
+                if (pacman.direction === 'down' && pacman.y < canvas.height / gridSize - 1) pacman.y += 0.1;
+                
+                // Collect dots
+                for (let i = dots.length - 1; i >= 0; i--) {
+                    const dot = dots[i];
+                    if (Math.abs(dot.x - pacman.x) < 0.5 && Math.abs(dot.y - pacman.y) < 0.5) {
+                        dots.splice(i, 1);
+                    }
+                }
+            }
+            
+            // Game loop
+            function gameLoop() {
+                update();
+                draw();
+                pacmanAnimationId = requestAnimationFrame(gameLoop);
+            }
+            
+            gameLoop();
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            generateGameCards();
+            
+            // Add keyboard navigation for game cards
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    // Close any open game
+                    document.querySelectorAll('.mini-game-container').forEach(container => {
+                        container.style.display = 'none';
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
