@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retro Arcade Hub - Playables</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+body {
+  margin:0;
+  font-family:'Press Start 2P', cursive;
+  background:#000;
+  color:#0ff;
+}
+h1 {
+  text-align:center;
+  margin:1rem 0;
+  text-shadow:0 0 5px #0ff,0 0 10px #0ff;
+}
+.grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:1rem;
+  padding:1rem;
+}
+.game-card {
+  background:#111;
+  border:2px solid #0ff;
+  border-radius:8px;
+  padding:10px;
+  text-align:center;
+  transition:transform 0.2s, box-shadow 0.2s;
+  cursor:pointer;
+}
+.game-card:hover {
+  transform:scale(1.05);
+  box-shadow:0 0 10px #0ff,0 0 20px #0ff inset;
+}
+.game-card img {
+  width:100%;
+  border-radius:4px;
+  margin-bottom:8px;
+}
+canvas { display:block; margin:0 auto; background:#000; }
+.mini-game { margin-top:10px; }
+@media (max-width:600px){
+  .grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<h1>🎮 Retro Arcade Hub 🎮</h1>
+<div class="grid">
+
+<!-- Super Mario Bros. 3 placeholder -->
+<div class="game-card">
+  <img src="https://upload.wikimedia.org/wikipedia/en/0/03/Super_Mario_Bros._3_box.png" alt="Super Mario Bros. 3">
+  <strong>Super Mario Bros. 3 (NES)</strong>
+  <p>Platformer playable below!</p>
+  <div class="mini-game"><canvas id="mario" width="200" height="150"></canvas></div>
+</div>
+
+<!-- Doom-style shooter -->
+<div class="game-card">
+  <img src="https://upload.wikimedia.org/wikipedia/en/d/d3/Doom_cover_art.jpg" alt="Doom">
+  <strong>Doom (PC)</strong>
+  <p>Mini 2D shooter playable below!</p>
+  <div class="mini-game"><canvas id="doom" width="200" height="150"></canvas></div>
+</div>
+
+<!-- Existing mini-games: Tetris -->
+<div class="game-card">
+  <img src="https://upload.wikimedia.org/wikipedia/en/5/5a/Tetris_Gameboy.jpg" alt="Tetris">
+  <strong>Tetris</strong>
+  <p>Definitive puzzle game. Play below!</p>
+  <div class="mini-game"><canvas id="tetris" width="200" height="400"></canvas></div>
+</div>
+
+<!-- Pong -->
+<div class="game-card">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/5/5d/Pong-1.png" alt="Pong">
+  <strong>Pong</strong>
+  <p>Classic paddle game.</p>
+  <div class="mini-game"><canvas id="pong" width="200" height="150"></canvas></div>
+</div>
+
+<!-- Pac-Man -->
+<div class="game-card">
+  <img src="https://upload.wikimedia.org/wikipedia/en/5/55/Pac-Man.png" alt="Pac-Man">
+  <strong>Pac-Man</strong>
+  <p>Arcade classic.</p>
+  <div class="mini-game"><canvas id="pacman" width="200" height="200"></canvas></div>
+</div>
+
+</div>
+
+<script>
+// ================= TETRIS =================
+const tCanvas = document.getElementById('tetris');
+const tCtx = tCanvas.getContext('2d');
+tCtx.scale(20,20);
+let tMatrix = [[0,1,0],[1,1,1],[0,0,0]];
+let tPos = {x:4,y:0};
+function tDraw(){
+  tCtx.fillStyle='#000';
+  tCtx.fillRect(0,0,10,20);
+  tMatrix.forEach((row,y)=>{
+    row.forEach((v,x)=>{
+      if(v){ tCtx.fillStyle='#0ff'; tCtx.fillRect(x+tPos.x,y+tPos.y,1,1);}
+    });
+  });
+}
+tDraw();
+
+// ================= PONG =================
+const pCanvas = document.getElementById('pong');
+const pCtx = pCanvas.getContext('2d');
+let ball={x:100,y:75,r:5,dx:2,dy:2};
+let paddle={x:90,y:140,w:40,h:5};
+function drawPong(){
+  pCtx.clearRect(0,0,200,150);
+  pCtx.fillStyle='#0ff';
+  pCtx.beginPath();
+  pCtx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);
+  pCtx.fill();
+  pCtx.fillRect(paddle.x,paddle.y,paddle.w,paddle.h);
+  ball.x+=ball.dx; ball.y+=ball.dy;
+  if(ball.x<0||ball.x>200) ball.dx*=-1;
+  if(ball.y<0||ball.y>150) ball.dy*=-1;
+  requestAnimationFrame(drawPong);
+}
+drawPong();
+
+// ================= PAC-MAN =================
+const pacCanvas=document.getElementById('pacman');
+const pac=pacCanvas.getContext('2d');
+let pacDot={x:100,y:100,r:10,dx:1.5,dy:1};
+function drawPac(){
+  pac.clearRect(0,0,200,200);
+  pac.fillStyle='#0ff';
+  pac.beginPath();
+  pac.arc(pacDot.x,pacDot.y,pacDot.r,0,Math.PI*2);
+  pac.fill();
+  pacDot.x+=pacDot.dx;
+  pacDot.y+=pacDot.dy;
+  if(pacDot.x<10||pacDot.x>190) pacDot.dx*=-1;
+  if(pacDot.y<10||pacDot.y>190) pacDot.dy*=-1;
+  requestAnimationFrame(drawPac);
+}
+drawPac();
+
+// ================= SUPER MARIO STYLE =================
+const mCanvas=document.getElementById('mario');
+const mCtx=mCanvas.getContext('2d');
+let mPlayer={x:20,y:130,w:15,h:15,dx:0,dy:0,jumping:false};
+let mBlocks=[{x:0,y:145,w:200,h:5},{x:50,y:120,w:30,h:5},{x:100,y:100,w:40,h:5}];
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft') mPlayer.dx=-2;
+  if(e.key==='ArrowRight') mPlayer.dx=2;
+  if(e.key==='ArrowUp' && !mPlayer.jumping){ mPlayer.dy=-6; mPlayer.jumping=true;}
+});
+document.addEventListener('keyup',e=>{
+  if(e.key==='ArrowLeft'||e.key==='ArrowRight') mPlayer.dx=0;
+});
+function drawMario(){
+  mCtx.clearRect(0,0,200,150);
+  mCtx.fillStyle='#0ff';
+  mCtx.fillRect(mPlayer.x,mPlayer.y,mPlayer.w,mPlayer.h);
+  mBlocks.forEach(b=>{
+    mCtx.fillStyle='#fff';
+    mCtx.fillRect(b.x,b.y,b.w,b.h);
+  });
+  // physics
+  mPlayer.dy+=0.3; mPlayer.y+=mPlayer.dy; mPlayer.x+=mPlayer.dx;
+  mBlocks.forEach(b=>{
+    if(mPlayer.x < b.x+b.w && mPlayer.x+mPlayer.w > b.x && mPlayer.y+mPlayer.h > b.y && mPlayer.y+mPlayer.h < b.y+b.h+5){
+      mPlayer.y=b.y-mPlayer.h; mPlayer.dy=0; mPlayer.jumping=false;
+    }
+  });
+  if(mPlayer.y+mPlayer.h>150){ mPlayer.y=150-mPlayer.h; mPlayer.dy=0; mPlayer.jumping=false;}
+  requestAnimationFrame(drawMario);
+}
+drawMario();
+
+// ================= DOOM-STYLE SHOOTER =================
+const dCanvas=document.getElementById('doom');
+const dCtx=dCanvas.getContext('2d');
+let dPlayer={x:100,y:75,r:7};
+let bullets=[];
+let enemies=[{x:50,y:50,r:5,dx:1,dy:1},{x:150,y:100,r:5,dx:-1,dy:1}];
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft') dPlayer.x-=3;
+  if(e.key==='ArrowRight') dPlayer.x+=3;
+  if(e.key==='ArrowUp') dPlayer.y-=3;
+  if(e.key==='ArrowDown') dPlayer.y+=3;
+  if(e.key===' ') bullets.push({x:dPlayer.x,y:dPlayer.y,r:3});
+});
+function drawDoom(){
+  dCtx.clearRect(0,0,200,150);
+  dCtx.fillStyle='#0ff';
+  dCtx.beginPath();
+  dCtx.arc(dPlayer.x,dPlayer.y,dPlayer.r,0,Math.PI*2);
+  dCtx.fill();
+  // bullets
+  bullets.forEach((b,i)=>{
+    dCtx.beginPath(); dCtx.arc(b.x,b.y,b.r,0,Math.PI*2); dCtx.fill();
+    b.y-=4; if(b.y<0) bullets.splice(i,1);
+  });
+  // enemies
+  enemies.forEach(e=>{
+    dCtx.beginPath(); dCtx.arc(e.x,e.y,e.r,0,Math.PI*2); dCtx.fillStyle='#f00'; dCtx.fill();
+    e.x+=e.dx; e.y+=e.dy;
+    if(e.x<0||e.x>200) e.dx*=-1;
+    if(e.y<0||e.y>150) e.dy*=-1;
+  });
+  requestAnimationFrame(drawDoom);
+}
+drawDoom();
+</script>
+</body>
+</html>
