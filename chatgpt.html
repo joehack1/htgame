@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini Windows OS</title>
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Segoe UI, sans-serif;
+}
+
+body{
+  height:100vh;
+  overflow:hidden;
+  background:url("https://images.unsplash.com/photo-1503264116251-35a269479413") center/cover no-repeat;
+}
+
+/* Desktop */
+.desktop{
+  padding:20px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:20px;
+  color:white;
+}
+
+.icon{
+  width:80px;
+  text-align:center;
+  cursor:pointer;
+}
+
+.icon img{
+  width:48px;
+  margin-bottom:5px;
+}
+
+/* Windows */
+.window{
+  position:absolute;
+  width:500px;
+  height:400px;
+  background:white;
+  border-radius:10px;
+  box-shadow:0 15px 40px rgba(0,0,0,0.4);
+  display:none;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.window-header{
+  background:#0078d7;
+  color:white;
+  padding:10px;
+  display:flex;
+  justify-content:space-between;
+  cursor:move;
+}
+
+.window-content{
+  flex:1;
+  padding:10px;
+  overflow:auto;
+}
+
+/* Taskbar */
+.taskbar{
+  position:absolute;
+  bottom:0;
+  width:100%;
+  height:50px;
+  background:rgba(20,20,20,0.95);
+  display:flex;
+  align-items:center;
+  padding:0 10px;
+  color:white;
+}
+
+.start{
+  background:#0078d7;
+  padding:6px 12px;
+  border-radius:4px;
+  cursor:pointer;
+}
+
+.task-icons{
+  display:flex;
+  gap:15px;
+  margin-left:15px;
+}
+
+.task-icons img{
+  width:22px;
+  cursor:pointer;
+}
+
+.system{
+  margin-left:auto;
+  display:flex;
+  gap:15px;
+  align-items:center;
+}
+
+input[type=range]{
+  width:80px;
+}
+
+/* Start Menu */
+.start-menu{
+  position:absolute;
+  bottom:50px;
+  left:10px;
+  width:300px;
+  background:rgba(30,30,30,0.95);
+  color:white;
+  padding:15px;
+  border-radius:10px;
+  display:none;
+}
+
+.start-menu input{
+  width:100%;
+  padding:6px;
+  margin-bottom:10px;
+  border:none;
+  border-radius:5px;
+}
+
+/* Excel Grid */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(10,1fr);
+  gap:1px;
+}
+
+.grid input{
+  width:100%;
+  padding:5px;
+  border:1px solid #ddd;
+}
+
+/* Responsive */
+@media(max-width:700px){
+  .window{
+    width:95%;
+    height:70%;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="desktop">
+
+  <div class="icon" onclick="openWin('files')">
+    <img src="https://img.icons8.com/fluency/48/folder-invoices.png">
+    <div>Files</div>
+  </div>
+
+  <div class="icon" onclick="openWin('notepad')">
+    <img src="https://img.icons8.com/fluency/48/notepad.png">
+    <div>Notepad</div>
+  </div>
+
+  <div class="icon" onclick="openWin('excel')">
+    <img src="https://img.icons8.com/fluency/48/microsoft-excel-2019.png">
+    <div>Excel</div>
+  </div>
+
+  <div class="icon" onclick="openWin('browser')">
+    <img src="https://img.icons8.com/fluency/48/google-chrome.png">
+    <div>Browser</div>
+  </div>
+
+  <div class="icon" onclick="openWin('settings')">
+    <img src="https://img.icons8.com/fluency/48/settings.png">
+    <div>Settings</div>
+  </div>
+
+</div>
+
+<!-- Windows -->
+
+<div class="window" id="files">
+  <div class="window-header" onmousedown="drag(event,this.parentElement)">
+    <span>File Manager</span>
+    <span onclick="closeWin('files')">✖</span>
+  </div>
+  <div class="window-content">
+    <ul>
+      <li>📁 Documents</li>
+      <li>📁 Pictures</li>
+      <li>📁 Downloads</li>
+      <li>📄 resume.docx</li>
+      <li>📄 project.zip</li>
+    </ul>
+  </div>
+</div>
+
+<div class="window" id="notepad">
+  <div class="window-header" onmousedown="drag(event,this.parentElement)">
+    <span>Notepad</span>
+    <span onclick="closeWin('notepad')">✖</span>
+  </div>
+  <div class="window-content">
+    <textarea style="width:100%;height:100%;border:none;outline:none;"></textarea>
+  </div>
+</div>
+
+<div class="window" id="excel">
+  <div class="window-header" onmousedown="drag(event,this.parentElement)">
+    <span>Excel</span>
+    <span onclick="closeWin('excel')">✖</span>
+  </div>
+  <div class="window-content">
+    <div class="grid">
+      <script>
+        for(let i=0;i<50;i++){
+          document.write("<input>");
+        }
+      </script>
+    </div>
+  </div>
+</div>
+
+<div class="window" id="browser">
+  <div class="window-header" onmousedown="drag(event,this.parentElement)">
+    <span>Browser</span>
+    <span onclick="closeWin('browser')">✖</span>
+  </div>
+  <div class="window-content">
+    <iframe src="https://example.com" style="width:100%;height:100%;border:none;"></iframe>
+  </div>
+</div>
+
+<div class="window" id="settings">
+  <div class="window-header" onmousedown="drag(event,this.parentElement)">
+    <span>Settings</span>
+    <span onclick="closeWin('settings')">✖</span>
+  </div>
+  <div class="window-content">
+    <p>Change Wallpaper:</p>
+    <button onclick="setBg(1)">Nature</button>
+    <button onclick="setBg(2)">City</button>
+  </div>
+</div>
+
+<!-- Taskbar -->
+<div class="taskbar">
+  <div class="start" onclick="toggleStart()">Start</div>
+
+  <div class="task-icons">
+    🔍
+  </div>
+
+  <div class="system">
+    🔋 <span id="battery">100%</span>
+    🔊 <input type="range" min="0" max="100" value="50">
+    <span id="clock"></span>
+  </div>
+</div>
+
+<!-- Start Menu -->
+<div class="start-menu" id="startMenu">
+  <input type="text" placeholder="Search..." onkeyup="searchApp(this.value)">
+  <div id="searchResults"></div>
+</div>
+
+<script>
+function openWin(id){
+  const w=document.getElementById(id);
+  w.style.display="flex";
+  w.style.top="100px";
+  w.style.left="100px";
+}
+
+function closeWin(id){
+  document.getElementById(id).style.display="none";
+}
+
+function drag(e,el){
+  let offsetX=e.clientX-el.offsetLeft;
+  let offsetY=e.clientY-el.offsetTop;
+
+  function move(e){
+    el.style.left=e.clientX-offsetX+"px";
+    el.style.top=e.clientY-offsetY+"px";
+  }
+
+  document.addEventListener("mousemove",move);
+  document.addEventListener("mouseup",()=>document.removeEventListener("mousemove",move),{once:true});
+}
+
+function toggleStart(){
+  const sm=document.getElementById("startMenu");
+  sm.style.display=sm.style.display==="block"?"none":"block";
+}
+
+function searchApp(val){
+  const apps=["files","notepad","excel","browser","settings"];
+  const result=apps.filter(a=>a.includes(val.toLowerCase()));
+  document.getElementById("searchResults").innerHTML=result.map(a=>`<div onclick="openWin('${a}')">${a}</div>`).join("");
+}
+
+function setBg(n){
+  if(n===1)
+    document.body.style.background="url(https://images.unsplash.com/photo-1506744038136-46273834b3fb) center/cover";
+  else
+    document.body.style.background="url(https://images.unsplash.com/photo-1492724441997-5dc865305da7) center/cover";
+}
+
+/* Clock */
+function updateClock(){
+  const now=new Date();
+  document.getElementById("clock").innerText=now.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+}
+setInterval(updateClock,1000);
+updateClock();
+
+/* Fake Battery Drain */
+let battery=100;
+setInterval(()=>{
+  battery--;
+  if(battery<0) battery=100;
+  document.getElementById("battery").innerText=battery+"%";
+},5000);
+</script>
+
+</body>
+</html>

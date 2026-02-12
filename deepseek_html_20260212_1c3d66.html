@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>Windows Simulation — File Manager, Notepad, Settings & more</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: black; /* fallback */
+        }
+
+        /* === WALLPAPER (dynamic background) === */
+        .win-desktop {
+            width: 100%;
+            height: 100%;
+            background-image: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1600&auto=format&fit=crop'); /* calm nature */
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: brightness(0.9) blur(0px);
+            transition: backdrop-filter 0.2s;
+        }
+
+        /* overlay to make icons readable */
+        .desktop-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 30, 50, 0.2);
+            pointer-events: none;
+        }
+
+        /* === ICONS GRID (responsive) === */
+        .icons-area {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            flex-direction: column;
+            align-content: flex-start;
+            padding: 20px 0 0 20px;
+            gap: 16px 24px;
+            height: calc(100% - 60px);
+            width: 100%;
+            position: relative;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        .desktop-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 80px;
+            padding: 8px 4px;
+            border-radius: 8px;
+            color: white;
+            text-shadow: 1px 1px 4px black, 0 0 8px rgba(0,0,0,0.7);
+            transition: all 0.1s;
+            cursor: default;
+            backdrop-filter: blur(4px);
+            background: rgba(0,0,0,0.2);
+            border: 1px solid transparent;
+        }
+
+        .desktop-icon:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border: 1px solid rgba(255,255,255,0.5);
+            backdrop-filter: blur(8px);
+        }
+
+        .desktop-icon.selected {
+            background: rgba(255, 255, 255, 0.35);
+            border: 1px solid white;
+            backdrop-filter: blur(8px);
+        }
+
+        .icon-img {
+            width: 48px;
+            height: 48px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            margin-bottom: 6px;
+            filter: drop-shadow(2px 4px 6px black);
+        }
+
+        .icon-label {
+            font-size: 13px;
+            font-weight: 500;
+            text-align: center;
+            background: rgba(0,0,0,0.5);
+            padding: 3px 10px;
+            border-radius: 30px;
+            backdrop-filter: blur(2px);
+            max-width: 90px;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+        }
+
+        /* === WINDOW MANAGER (PANELS) === */
+        .window-manager {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        .window {
+            position: absolute;
+            width: min(700px, 90vw);
+            height: min(500px, 70vh);
+            background: rgba(30, 30, 40, 0.92);
+            backdrop-filter: blur(20px);
+            border-radius: 12px 12px 12px 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            flex-direction: column;
+            pointer-events: auto;
+            transition: all 0.15s ease;
+            resize: both;
+            overflow: auto;
+            min-width: 260px;
+            min-height: 200px;
+        }
+
+        .window-header {
+            padding: 12px 16px;
+            background: rgba(20, 20, 28, 0.9);
+            border-bottom: 1px solid #444;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: move;
+            color: white;
+        }
+
+        .window-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        .window-controls span {
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.1s;
+        }
+
+        .window-controls span:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .window-content {
+            flex: 1;
+            padding: 16px;
+            color: white;
+            overflow-y: auto;
+            background: rgba(20, 20, 28, 0.7);
+        }
+
+        /* file manager specific */
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 16px;
+        }
+
+        .file-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* notepad */
+        .notepad-textarea {
+            width: 100%;
+            height: 100%;
+            background: #1e1e1e;
+            border: none;
+            color: #fff;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+        }
+
+        /* settings panel */
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* battery and volume sliders */
+        .battery-level {
+            width: 100%;
+            height: 8px;
+            background: #333;
+            border-radius: 10px;
+            margin-top: 8px;
+        }
+
+        .battery-fill {
+            width: 67%;
+            height: 8px;
+            background: #6ecf6e;
+            border-radius: 10px;
+        }
+
+        .volume-slider, .brightness-slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        /* browser simulation */
+        .browser-url {
+            display: flex;
+            background: #2a2a2a;
+            padding: 8px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .browser-url input {
+            flex: 1;
+            background: #3a3a3a;
+            border: none;
+            padding: 8px;
+            color: white;
+            border-radius: 6px;
+        }
+
+        /* excel sheet simulation */
+        .excel-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 2px;
+            background: #2d2d2d;
+        }
+
+        .excel-cell {
+            background: #3a3a3a;
+            padding: 12px 4px;
+            text-align: center;
+            color: white;
+            border: 1px solid #555;
+            font-size: 13px;
+        }
+
+        .excel-header {
+            background: #0e5c3b;
+            font-weight: bold;
+        }
+
+        /* taskbar (takbar) — fully responsive */
+        .taskbar {
+            height: 60px;
+            width: 100%;
+            background: rgba(20, 20, 28, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            z-index: 1000;
+            color: white;
+            flex-wrap: wrap;
+        }
+
+        .taskbar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .start-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 16px;
+            height: 44px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .taskbar-icons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .taskbar-icon {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            font-size: 22px;
+        }
+
+        .taskbar-center {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            margin: 0 10px;
+        }
+
+        .search-box {
+            width: 100%;
+            max-width: 400px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 30px;
+            padding: 8px 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .search-box input {
+            background: transparent;
+            border: none;
+            color: white;
+            width: 100%;
+            outline: none;
+        }
+
+        .taskbar-right {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            background: rgba(0,0,0,0.25);
+            padding: 0 16px;
+            border-radius: 30px;
+            height: 48px;
+        }
+
+        .time-date {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            line-height: 1.2;
+            font-size: 13px;
+        }
+
+        /* responsive tweaks */
+        @media (max-width: 700px) {
+            .icons-area { padding: 10px; gap: 8px; }
+            .desktop-icon { width: 70px; }
+            .icon-label { font-size: 11px; }
+            .taskbar-center { display: none; } /* hide search on very small */
+            .taskbar-right { gap: 8px; }
+        }
+
+        /* battery icon */
+        .battery-icon {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .battery-body {
+            width: 26px;
+            height: 14px;
+            border: 2px solid white;
+            border-radius: 3px;
+            position: relative;
+        }
+        .battery-head {
+            width: 4px;
+            height: 6px;
+            background: white;
+            border-radius: 2px;
+        }
+        .battery-fill-small {
+            height: 10px;
+            width: 60%;
+            background: #b2ffb2;
+            margin: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="win-desktop">
+        <!-- wallpaper visible behind -->
+        <div class="desktop-overlay"></div>
+
+        <!-- ========== DESKTOP ICONS ========== -->
+        <div class="icons-area">
+            <div class="desktop-icon" ondblclick="openWindow('filemanager')">
+                <div class="icon-img" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22white%22><path d=%22M4 4h16v12H4V4zm2 2v8h12V6H6zm14 14H4v-2h16v2z%22/></svg>');"></div>
+                <span class="icon-label">File Manager</span>
+            </div>
+            <div class="desktop-icon" ondblclick="openWindow('notepad')">
+                <div class="icon-img" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22white%22><path d=%22M4 4h16v16H4V4zm2 2v12h12V6H6zm2 2h8v2H8V8zm0 4h8v2H8v-2zm0 4h5v2H8v-2z%22/></svg>');"></div>
+                <span class="icon-label">Notepad</span>
+            </div>
+            <div class="desktop-icon" ondblclick="openWindow('settings')">
+                <div class="icon-img" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22white%22><path d=%22M19.14 12.94c.04-.3.06-.61.06-.94 0-.33-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94 0 .31.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z%22/></svg>');"></div>
+                <span class="icon-label">Settings</span>
+            </div>
+            <div class="desktop-icon" ondblclick="openWindow('browser')">
+                <div class="icon-img" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22white%22><path d=%22M21 6h-2v4h-2V6h-2V4h2V2h2v2h2v2zm-6 4v8H5v-8h10zm0-2H5c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2v-8c0-1.1-.9-2-2-2z%22/></svg>');"></div>
+                <span class="icon-label">Browser</span>
+            </div>
+            <div class="desktop-icon" ondblclick="openWindow('excel')">
+                <div class="icon-img" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22white%22><path d=%22M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm1 18H7v-2h8v2zm0-4H7v-2h8v2zm-3-4V7l5 5h-5z%22/></svg>');"></div>
+                <span class="icon-label">Excel</span>
+            </div>
+            <div class="desktop-icon" ondblclick="openWindow('volume')">
+                <div class="icon-img" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22white%22><path d=%22M3 9v6h4l5 5V4L7 9H3z%22/></svg>');"></div>
+                <span class="icon-label">Volume</span>
+            </div>
+            <div class="desktop-icon" ondblclick="openWindow('battery')">
+                <div class="icon-img" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22white%22><path d=%22M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4zM13 18h-2v-2h2v2zm0-5h-2V9h2v4z%22/></svg>');"></div>
+                <span class="icon-label">Battery</span>
+            </div>
+        </div>
+
+        <!-- ========== WINDOW MANAGER (DYNAMIC PANELS) ========== -->
+        <div id="windowManager" class="window-manager"></div>
+
+        <!-- ========== TASKBAR (FULL TAKBAR) ========== -->
+        <div class="taskbar">
+            <div class="taskbar-left">
+                <div class="start-btn">
+                    <span style="font-size:24px;">🪟</span>
+                    <span style="font-weight:500;">Start</span>
+                </div>
+                <div class="taskbar-icons">
+                    <div class="taskbar-icon">📁</div>
+                    <div class="taskbar-icon">🌐</div>
+                    <div class="taskbar-icon">⚙️</div>
+                    <div class="taskbar-icon">📊</div>
+                </div>
+            </div>
+            <div class="taskbar-center">
+                <div class="search-box">
+                    <span>🔍</span>
+                    <input type="text" placeholder="Search (Word, Excel, settings...)" id="globalSearch" onkeyup="searchApps(event)">
+                    <span>🎙️</span>
+                </div>
+            </div>
+            <div class="taskbar-right">
+                <span class="tray-icon">🔊</span>
+                <span class="tray-icon">📶</span>
+                <div class="battery-icon">
+                    <div class="battery-body">
+                        <div class="battery-fill-small" style="width:70%"></div>
+                    </div>
+                    <div class="battery-head"></div>
+                </div>
+                <div class="time-date">
+                    <span class="time" id="timeDisplay">3:45 PM</span>
+                    <span class="date" id="dateDisplay">2025-02-12</span>
+                </div>
+                <span>🔔</span>
+                <span>👤</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ---------- GLOBAL WINDOW MANAGEMENT ----------
+        let windows = [];
+        let zIndexCounter = 300;
+        const manager = document.getElementById('windowManager');
+
+        // predefine window positions
+        function openWindow(type) {
+            let title, content, width = 600, height = 450, left = 50 + (windows.length * 30), top = 50 + (windows.length * 20);
+            // avoid going off screen
+            left = left % 300 + 40;
+            top = top % 200 + 40;
+
+            switch(type) {
+                case 'filemanager':
+                    title = '📁 File Manager';
+                    content = `<div style="display:flex; flex-direction:column; height:100%;">
+                        <div style="background:#2a2a2a; padding:8px; border-radius:6px;">📂 This PC > Desktop</div>
+                        <div class="file-grid">
+                            <div class="file-item">📄 Document.txt</div>
+                            <div class="file-item">📁 Projects</div>
+                            <div class="file-item">🖼️ image.png</div>
+                            <div class="file-item">🎵 song.mp3</div>
+                            <div class="file-item">🎬 video.mp4</div>
+                            <div class="file-item">📦 archive.zip</div>
+                        </div>
+                    </div>`;
+                    break;
+                case 'notepad':
+                    title = '📝 Notepad';
+                    content = `<textarea class="notepad-textarea" placeholder="Type something...">Welcome to Windows Notepad 🪟\nDouble-click icons to open apps.</textarea>`;
+                    break;
+                case 'settings':
+                    title = '⚙️ Settings';
+                    content = `<div>
+                        <div class="setting-row"><span>🌙 Dark mode</span> <span style="background:#444; padding:4px 16px; border-radius:12px;">On</span></div>
+                        <div class="setting-row"><span>🔊 Volume</span> <input type="range" min="0" max="100" value="65" class="volume-slider" onchange="updateVolume(this.value)"></div>
+                        <div class="setting-row"><span>🔆 Brightness</span> <input type="range" min="0" max="100" value="80" class="brightness-slider" onchange="updateBrightness(this.value)"></div>
+                        <div class="setting-row"><span>🔋 Battery Saver</span> <span>Off</span></div>
+                        <div class="setting-row"><span>📶 Wi-Fi</span> <span>Connected</span></div>
+                        <div class="setting-row"><span>🎨 Personalization</span> <span>Wallpaper</span></div>
+                    </div>`;
+                    break;
+                case 'browser':
+                    title = '🌐 Browser';
+                    content = `<div style="display:flex; flex-direction:column; height:100%;">
+                        <div class="browser-url">
+                            <span style="margin-right:8px;">🔒</span>
+                            <input type="text" value="https://www.bing.com" readonly>
+                            <span style="margin-left:8px;">↻</span>
+                        </div>
+                        <div style="background:#2a4a5a; padding:20px; border-radius:12px; text-align:center; flex:1; display:flex; align-items:center; justify-content:center;">
+                            🌍 Windows Search: <strong>Word, Excel, PDF</strong> — your web, simplified.
+                        </div>
+                        <div style="margin-top:10px;">🔍 Trending: Windows 11, Copilot, Surface</div>
+                    </div>`;
+                    break;
+                case 'excel':
+                    title = '📊 Excel Sheet';
+                    content = `<div style="height:100%; overflow:auto;">
+                        <div class="excel-grid">
+                            <div class="excel-cell excel-header">A</div><div class="excel-cell excel-header">B</div><div class="excel-cell excel-header">C</div><div class="excel-cell excel-header">D</div><div class="excel-cell excel-header">E</div>
+                            <div class="excel-cell">1</div><div class="excel-cell">Sales</div><div class="excel-cell">$234</div><div class="excel-cell">Q1</div><div class="excel-cell">✔️</div>
+                            <div class="excel-cell">2</div><div class="excel-cell">Marketing</div><div class="excel-cell">$567</div><div class="excel-cell">Q2</div><div class="excel-cell">✔️</div>
+                            <div class="excel-cell">3</div><div class="excel-cell">Dev</div><div class="excel-cell">$890</div><div class="excel-cell">Q3</div><div class="excel-cell">📊</div>
+                            <div class="excel-cell">4</div><div class="excel-cell">Support</div><div class="excel-cell">$123</div><div class="excel-cell">Q4</div><div class="excel-cell">📉</div>
+                        </div>
+                        <p style="margin-top:12px;">🔢 =SUM(B2:B4) → $1,814</p>
+                    </div>`;
+                    break;
+                case 'volume':
+                    title = '🔊 Volume Control';
+                    content = `<div style="padding:20px;">
+                        <h3>Master Volume: 65%</h3>
+                        <input type="range" min="0" max="100" value="65" style="width:100%;" onchange="updateVolume(this.value)">
+                        <div style="display:flex; gap:20px; margin-top:30px;">
+                            <span>🔈</span><span>🔉</span><span>🔊</span>
+                        </div>
+                        <p>System sounds: ON</p>
+                    </div>`;
+                    break;
+                case 'battery':
+                    title = '🔋 Battery';
+                    content = `<div style="padding:20px;">
+                        <h2>🔋 67% remaining</h2>
+                        <div class="battery-level"><div class="battery-fill" style="width:67%;"></div></div>
+                        <p>⚡ Battery Saver: Off</p>
+                        <p>⏳ Estimated remaining: 4h 22m</p>
+                        <p>🔌 AC: Not charging</p>
+                    </div>`;
+                    break;
+                default: return;
+            }
+
+            const windowId = 'win-' + Date.now() + Math.random();
+            const winDiv = document.createElement('div');
+            winDiv.className = 'window';
+            winDiv.id = windowId;
+            winDiv.style.left = left + 'px';
+            winDiv.style.top = top + 'px';
+            winDiv.style.width = width + 'px';
+            winDiv.style.height = height + 'px';
+            winDiv.style.zIndex = ++zIndexCounter;
+            winDiv.innerHTML = `
+                <div class="window-header" onmousedown="startDrag(event, '${windowId}')">
+                    <div class="window-title">${title}</div>
+                    <div class="window-controls">
+                        <span onclick="minimizeWindow('${windowId}')">➖</span>
+                        <span onclick="maximizeWindow('${windowId}')">🗖</span>
+                        <span onclick="closeWindow('${windowId}')">✖</span>
+                    </div>
+                </div>
+                <div class="window-content">
+                    ${content}
+                </div>
+            `;
+            manager.appendChild(winDiv);
+            windows.push({id: windowId, element: winDiv});
+            bringToFront(windowId);
+        }
+
+        function bringToFront(id) {
+            zIndexCounter++;
+            document.getElementById(id).style.zIndex = zIndexCounter;
+        }
+
+        function closeWindow(id) {
+            const el = document.getElementById(id);
+            if(el) el.remove();
+            windows = windows.filter(w => w.id !== id);
+        }
+
+        function minimizeWindow(id) {
+            const el = document.getElementById(id);
+            el.style.display = 'none';  // simple minimize
+        }
+        function maximizeWindow(id) {
+            const el = document.getElementById(id);
+            el.style.width = '95%';
+            el.style.height = '85%';
+            el.style.left = '2.5%';
+            el.style.top = '5%';
+        }
+
+        // ----- DRAG LOGIC (simple) -----
+        let dragging = false, currentWindowId, offsetX, offsetY;
+        window.startDrag = function(e, winId) {
+            dragging = true;
+            currentWindowId = winId;
+            const win = document.getElementById(winId);
+            const rect = win.getBoundingClientRect();
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+            bringToFront(winId);
+            e.preventDefault();
+        };
+
+        window.onmousemove = function(e) {
+            if(dragging && currentWindowId) {
+                const win = document.getElementById(currentWindowId);
+                win.style.left = (e.clientX - offsetX) + 'px';
+                win.style.top = (e.clientY - offsetY) + 'px';
+            }
+        };
+        window.onmouseup = function() { dragging = false; };
+
+        // ------ volume / brightness simulation -----
+        window.updateVolume = function(val) {
+            console.log('volume', val);
+        }
+        window.updateBrightness = function(val) {
+            document.querySelector('.win-desktop').style.backdropFilter = `brightness(${0.5 + val/200}) blur(0px)`;
+        }
+
+        // ----- TIME UPDATE -----
+        function updateClock() {
+            const now = new Date();
+            let h = now.getHours(), m = now.getMinutes(), ampm = h >=12 ? 'PM' : 'AM';
+            h = h % 12 || 12;
+            m = m <10 ? '0'+m : m;
+            document.getElementById('timeDisplay').innerText = `${h}:${m} ${ampm}`;
+            document.getElementById('dateDisplay').innerText = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        }
+        setInterval(updateClock, 500);
+        updateClock();
+
+        // ----- SEARCH (Word, Excel, etc) -----
+        window.searchApps = function(e) {
+            const query = e.target.value.toLowerCase();
+            if(query.includes('word') || query.includes('excel') || query.includes('browser') || query.includes('setting')) {
+                // simulate - open excel if typed
+                if(query.includes('excel')) openWindow('excel');
+                else if(query.includes('word')) { alert('Opening Word... (simulated)'); }
+                else if(query.includes('browser')) openWindow('browser');
+                else if(query.includes('setting')) openWindow('settings');
+            }
+        }
+
+        // double click desktop icons open windows (already ondblclick)
+        window.openWindow = openWindow;
+
+        // make all desktop icons selectable
+        document.querySelectorAll('.desktop-icon').forEach(icon => {
+            icon.addEventListener('click', function(e) {
+                document.querySelectorAll('.desktop-icon').forEach(i => i.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+        });
+
+        // responsive: open a few windows on load as demo
+        window.onload = function() {
+            openWindow('filemanager');
+            openWindow('notepad');
+            openWindow('settings');
+            openWindow('battery');
+        }
+    </script>
+</body>
+</html>

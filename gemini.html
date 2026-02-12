@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebOS Simulation</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --taskbar-bg: rgba(20, 20, 20, 0.7);
+            --win-bg: rgba(255, 255, 255, 0.95);
+            --accent: #0078d4;
+            --radius: 8px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            overflow: hidden;
+            background: url('https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1920') center/cover no-repeat;
+        }
+
+        /* --- Desktop --- */
+        #desktop {
+            height: calc(100vh - 48px);
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, 90px);
+            grid-template-rows: repeat(auto-fill, 100px);
+            grid-auto-flow: column;
+            gap: 15px;
+        }
+
+        .icon {
+            display: flex; flex-direction: column; align-items: center;
+            color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            cursor: pointer; padding: 10px; border-radius: 4px;
+        }
+        .icon:hover { background: rgba(255,255,255,0.1); }
+        .icon i { width: 40px; height: 40px; margin-bottom: 5px; }
+        .icon span { font-size: 12px; text-align: center; }
+
+        /* --- Taskbar --- */
+        #taskbar {
+            position: fixed; bottom: 0; width: 100%; height: 48px;
+            background: var(--taskbar-bg); backdrop-filter: blur(15px);
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 9999; color: white;
+        }
+
+        .tb-section { display: flex; align-items: center; height: 100%; }
+        .tb-item { padding: 0 12px; height: 100%; display: flex; align-items: center; cursor: pointer; }
+        .tb-item:hover { background: rgba(255,255,255,0.1); }
+
+        /* --- Windows --- */
+        .window {
+            position: absolute; top: 100px; left: 100px;
+            width: 600px; height: 400px;
+            background: var(--win-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: none; flex-direction: column;
+            overflow: hidden; resize: both; min-width: 300px; min-height: 200px;
+            z-index: 10;
+        }
+
+        .win-header {
+            padding: 10px; background: #eee; display: flex;
+            justify-content: space-between; align-items: center; cursor: move;
+        }
+        .win-controls { display: flex; gap: 10px; }
+        .win-body { flex: 1; padding: 15px; overflow: auto; }
+
+        /* --- App Specifics --- */
+        textarea#notepad-area { width: 100%; height: 100%; border: none; outline: none; resize: none; font-family: monospace; }
+        .file-grid { display: grid; grid-template-columns: repeat(auto-fill, 80px); gap: 15px; color: #333; }
+        .browser-bar { display: flex; gap: 5px; margin-bottom: 10px; }
+        .browser-bar input { flex: 1; padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
+
+        /* --- Panels --- */
+        #start-menu, #side-panel {
+            position: fixed; bottom: 55px; background: var(--taskbar-bg);
+            backdrop-filter: blur(20px); border-radius: var(--radius);
+            display: none; color: white; padding: 20px; z-index: 10000;
+        }
+        #start-menu { left: 10px; width: 350px; height: 450px; }
+        #side-panel { right: 10px; width: 300px; }
+
+        .active { display: flex !important; }
+        
+        /* Mobile adjustment */
+        @media (max-width: 600px) {
+            .window { width: 95vw !important; left: 2.5vw !important; top: 50px !important; }
+            #start-menu { width: 95vw; left: 2.5vw; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="desktop">
+        <div class="icon" onclick="openWin('explorer')"><i data-lucide="folder"></i><span>Files</span></div>
+        <div class="icon" onclick="openWin('notepad')"><i data-lucide="file-text"></i><span>Notepad</span></div>
+        <div class="icon" onclick="openWin('browser')"><i data-lucide="globe"></i><span>Browser</span></div>
+        <div class="icon" onclick="openWin('word')"><i data-lucide="file-edit" style="color: #2b579a;"></i><span>Word</span></div>
+        <div class="icon" onclick="openWin('excel')"><i data-lucide="table" style="color: #217346;"></i><span>Excel</span></div>
+        <div class="icon" onclick="openWin('settings')"><i data-lucide="settings"></i><span>Settings</span></div>
+    </div>
+
+    <div id="win-notepad" class="window">
+        <div class="win-header"><span>Notepad</span><div class="win-controls" onclick="closeWin('notepad')"><i data-lucide="x"></i></div></div>
+        <div class="win-body"><textarea id="notepad-area" placeholder="Start typing..."></textarea></div>
+    </div>
+
+    <div id="win-explorer" class="window">
+        <div class="win-header"><span>File Manager</span><div class="win-controls" onclick="closeWin('explorer')"><i data-lucide="x"></i></div></div>
+        <div class="win-body">
+            <div class="file-grid">
+                <div class="icon" style="color: #333;"><i data-lucide="image"></i><span>Photos</span></div>
+                <div class="icon" style="color: #333;"><i data-lucide="music"></i><span>Music</span></div>
+                <div class="icon" style="color: #333;"><i data-lucide="video"></i><span>Videos</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="win-browser" class="window">
+        <div class="win-header"><span>Web Browser</span><div class="win-controls" onclick="closeWin('browser')"><i data-lucide="x"></i></div></div>
+        <div class="win-body">
+            <div class="browser-bar"><input type="text" value="https://www.google.com"><button>Go</button></div>
+            <div style="height: 80%; background: #fff; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; color: #999;">
+                Browser Content Simulation
+            </div>
+        </div>
+    </div>
+
+    <div id="win-word" class="window">
+        <div class="win-header"><span>Microsoft Word</span><div class="win-controls" onclick="closeWin('word')"><i data-lucide="x"></i></div></div>
+        <div class="win-body" style="background: white; color: black; padding: 40px; box-shadow: inset 0 0 10px #ccc;">
+            <h2 style="border-bottom: 2px solid #2b579a">Document 1</h2>
+            <p>Simulated Word interface...</p>
+        </div>
+    </div>
+
+    <div id="start-menu">
+        <h3>Start</h3>
+        <input type="text" placeholder="Type to search..." style="width: 100%; padding: 8px; border-radius: 4px; border: none; margin-bottom: 15px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>📌 Pinned Apps</div>
+            <div>⚡ Recent</div>
+        </div>
+    </div>
+
+    <div id="side-panel">
+        <h4>Action Center</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <button style="padding: 10px;">Bluetooth</button>
+            <button style="padding: 10px;">Airplane Mode</button>
+        </div>
+        <hr>
+        <p>Volume</p><input type="range" style="width: 100%;">
+        <p>Brightness</p><input type="range" style="width: 100%;">
+    </div>
+
+    <div id="taskbar">
+        <div class="tb-section">
+            <div class="tb-item" onclick="togglePanel('start-menu')"><i data-lucide="layout-grid"></i></div>
+            <div class="tb-item"><i data-lucide="search"></i></div>
+        </div>
+        <div class="tb-section">
+            <div class="tb-item" onclick="openWin('explorer')"><i data-lucide="folder"></i></div>
+            <div class="tb-item" onclick="openWin('browser')"><i data-lucide="chrome"></i></div>
+        </div>
+        <div class="tb-section">
+            <div class="tb-item"><i data-lucide="battery-charging"></i> 85%</div>
+            <div class="tb-item" onclick="togglePanel('side-panel')"><i data-lucide="volume-2"></i></div>
+            <div class="tb-item" style="font-size: 12px; flex-direction: column; line-height: 1.2; justify-content: center;">
+                <div id="clock">12:00</div>
+                <div id="date">2026-02-12</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // Window Management
+        function openWin(id) {
+            const win = document.getElementById(`win-${id}`);
+            if(win) {
+                win.style.display = 'flex';
+                win.style.zIndex = Math.floor(Date.now() / 1000);
+            }
+        }
+
+        function closeWin(id) {
+            document.getElementById(`win-${id}`).style.display = 'none';
+        }
+
+        function togglePanel(id) {
+            document.querySelectorAll('#start-menu, #side-panel').forEach(p => {
+                if(p.id !== id) p.classList.remove('active');
+            });
+            document.getElementById(id).classList.toggle('active');
+        }
+
+        // Clock
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            document.getElementById('date').textContent = now.toLocaleDateString();
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // Dragging Logic
+        document.querySelectorAll('.win-header').forEach(header => {
+            let isDragging = false;
+            let offset = { x: 0, y: 0 };
+            const win = header.parentElement;
+
+            header.addEventListener('mousedown', e => {
+                isDragging = true;
+                offset.x = e.clientX - win.offsetLeft;
+                offset.y = e.clientY - win.offsetTop;
+                win.style.zIndex = 1000;
+            });
+
+            document.addEventListener('mousemove', e => {
+                if (!isDragging) return;
+                win.style.left = (e.clientX - offset.x) + 'px';
+                win.style.top = (e.clientY - offset.y) + 'px';
+            });
+
+            document.addEventListener('mouseup', () => isDragging = false);
+        });
+    </script>
+</body>
+</html>

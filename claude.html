@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows 11 Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            background: url('https://images.unsplash.com/photo-1557683316-973673baf926?w=1920&h=1080&fit=crop') center/cover no-repeat;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+            pointer-events: none;
+        }
+
+        .desktop {
+            height: calc(100vh - 48px);
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, 90px);
+            grid-auto-rows: 100px;
+            gap: 15px;
+            align-content: start;
+            position: relative;
+            z-index: 1;
+        }
+
+        .icon {
+            width: 80px;
+            height: 90px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .icon:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .icon-image {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .icon-label {
+            color: white;
+            font-size: 11px;
+            text-align: center;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+            word-wrap: break-word;
+            max-width: 80px;
+        }
+
+        /* Window Styles */
+        .window {
+            position: absolute;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 100;
+        }
+
+        .window.active {
+            display: flex;
+            z-index: 101;
+        }
+
+        .window.maximized {
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: calc(100vh - 48px) !important;
+            border-radius: 0;
+        }
+
+        .window-titlebar {
+            background: #f3f3f3;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            cursor: move;
+            user-select: none;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .window-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+        }
+
+        .window-title {
+            flex: 1;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        .window-control {
+            width: 46px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 10px;
+            transition: background-color 0.2s;
+        }
+
+        .window-control:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .window-control.close:hover {
+            background-color: #e81123;
+            color: white;
+        }
+
+        .window-content {
+            flex: 1;
+            overflow: auto;
+            background: white;
+        }
+
+        /* Taskbar */
+        .taskbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 48px;
+            background: rgba(243, 243, 243, 0.95);
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .start-button {
+            width: 48px;
+            height: 40px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .start-button:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .search-box {
+            margin-left: 8px;
+            height: 32px;
+            width: 300px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 0 12px;
+            font-size: 14px;
+        }
+
+        .taskbar-apps {
+            display: flex;
+            gap: 4px;
+            margin-left: 16px;
+        }
+
+        .taskbar-icon {
+            width: 40px;
+            height: 40px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .taskbar-icon:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .taskbar-icon.active::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            width: 20px;
+            height: 3px;
+            background: #0078d4;
+            border-radius: 2px;
+        }
+
+        .system-tray {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tray-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .tray-icon:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .time-date {
+            padding: 4px 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 11px;
+            text-align: right;
+        }
+
+        .time-date:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        /* Start Menu */
+        .start-menu {
+            position: fixed;
+            bottom: 56px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: rgba(243, 243, 243, 0.98);
+            backdrop-filter: blur(40px);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: none;
+            flex-direction: column;
+            z-index: 999;
+            padding: 20px;
+        }
+
+        .start-menu.active {
+            display: flex;
+        }
+
+        .start-menu-header {
+            margin-bottom: 20px;
+        }
+
+        .start-menu-search {
+            width: 100%;
+            height: 40px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 0 16px;
+            font-size: 14px;
+        }
+
+        .pinned-apps {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .pinned-apps h3 {
+            font-size: 13px;
+            margin-bottom: 16px;
+            color: #333;
+        }
+
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 16px;
+        }
+
+        .app-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .app-item:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .app-item-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .app-item-name {
+            font-size: 11px;
+            text-align: center;
+        }
+
+        /* File Manager */
+        .file-manager-toolbar {
+            display: flex;
+            gap: 8px;
+            padding: 8px;
+            background: #f8f8f8;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .toolbar-btn {
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .toolbar-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .file-manager-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .file-sidebar {
+            width: 200px;
+            background: #f8f8f8;
+            border-right: 1px solid #e0e0e0;
+            padding: 12px;
+            overflow-y: auto;
+        }
+
+        .sidebar-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 13px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .file-main {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-bottom: 4px;
+        }
+
+        .file-item:hover {
+            background: #f0f0f0;
+        }
+
+        .file-item-icon {
+            width: 32px;
+            height: 32px;
+            margin-right: 12px;
+            font-size: 24px;
+        }
+
+        /* Notepad */
+        .notepad-toolbar {
+            padding: 8px;
+            background: #f8f8f8;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 8px;
+        }
+
+        .notepad-textarea {
+            flex: 1;
+            border: none;
+            padding: 16px;
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+        }
+
+        /* Browser */
+        .browser-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: #f8f8f8;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .browser-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .browser-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .browser-url {
+            flex: 1;
+            height: 32px;
+            border: 1px solid #ccc;
+            border-radius: 16px;
+            padding: 0 16px;
+            font-size: 13px;
+        }
+
+        .browser-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        /* Settings */
+        .settings-content {
+            display: flex;
+            height: 100%;
+        }
+
+        .settings-sidebar {
+            width: 250px;
+            background: #f8f8f8;
+            border-right: 1px solid #e0e0e0;
+            padding: 12px;
+        }
+
+        .settings-item {
+            padding: 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+        }
+
+        .settings-item:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .settings-main {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .settings-section {
+            margin-bottom: 32px;
+        }
+
+        .settings-section h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+
+        .settings-option {
+            padding: 16px;
+            background: #f8f8f8;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Word/Excel */
+        .office-toolbar {
+            background: #2b579a;
+            color: white;
+            padding: 4px 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
+        }
+
+        .office-ribbon {
+            background: #f8f8f8;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 8px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .office-content {
+            flex: 1;
+            background: white;
+            padding: 60px;
+            overflow-y: auto;
+        }
+
+        .excel-grid {
+            display: grid;
+            grid-template-columns: 40px repeat(10, 100px);
+            grid-template-rows: 30px repeat(20, 30px);
+            border: 1px solid #ccc;
+        }
+
+        .excel-cell {
+            border: 1px solid #e0e0e0;
+            padding: 4px 8px;
+            font-size: 12px;
+            background: white;
+        }
+
+        .excel-cell.header {
+            background: #f0f0f0;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .excel-cell input {
+            width: 100%;
+            border: none;
+            outline: none;
+            font-size: 12px;
+        }
+
+        /* Volume Control */
+        .volume-panel {
+            position: fixed;
+            bottom: 60px;
+            right: 10px;
+            width: 60px;
+            height: 200px;
+            background: rgba(243, 243, 243, 0.98);
+            backdrop-filter: blur(40px);
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            padding: 16px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            z-index: 998;
+        }
+
+        .volume-panel.active {
+            display: flex;
+        }
+
+        .volume-slider {
+            writing-mode: bt-lr;
+            -webkit-appearance: slider-vertical;
+            width: 8px;
+            height: 140px;
+            margin: 16px 0;
+        }
+
+        .volume-icon-display {
+            font-size: 24px;
+        }
+
+        /* Battery Panel */
+        .battery-panel {
+            position: fixed;
+            bottom: 60px;
+            right: 10px;
+            width: 300px;
+            background: rgba(243, 243, 243, 0.98);
+            backdrop-filter: blur(40px);
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            padding: 16px;
+            display: none;
+            flex-direction: column;
+            z-index: 998;
+        }
+
+        .battery-panel.active {
+            display: flex;
+        }
+
+        .battery-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .battery-percentage {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .battery-bar {
+            width: 100%;
+            height: 24px;
+            background: #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .battery-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            width: 85%;
+            transition: width 0.3s;
+        }
+
+        /* Icon Colors */
+        .icon-pc { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .icon-folder { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+        .icon-recycle { background: linear-gradient(135deg, #94a3b8, #64748b); }
+        .icon-chrome { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .icon-edge { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+        .icon-notepad { background: linear-gradient(135deg, #60a5fa, #3b82f6); }
+        .icon-settings { background: linear-gradient(135deg, #6b7280, #4b5563); }
+        .icon-word { background: linear-gradient(135deg, #2563eb, #1e40af); }
+        .icon-excel { background: linear-gradient(135deg, #10b981, #059669); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .desktop {
+                grid-template-columns: repeat(auto-fill, 70px);
+            }
+            .start-menu {
+                width: 90vw;
+                height: 70vh;
+            }
+            .app-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            .search-box {
+                width: 150px;
+            }
+            .file-sidebar {
+                width: 150px;
+            }
+            .settings-sidebar {
+                width: 200px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .taskbar-apps {
+                display: none;
+            }
+            .search-box {
+                width: 100px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="desktop" id="desktop">
+        <!-- Desktop Icons -->
+        <div class="icon" ondblclick="openWindow('fileManager')">
+            <div class="icon-image icon-pc">🖥️</div>
+            <div class="icon-label">This PC</div>
+        </div>
+        <div class="icon">
+            <div class="icon-image icon-recycle">🗑️</div>
+            <div class="icon-label">Recycle Bin</div>
+        </div>
+        <div class="icon" ondblclick="openWindow('fileManager')">
+            <div class="icon-image icon-folder">📁</div>
+            <div class="icon-label">Documents</div>
+        </div>
+        <div class="icon" ondblclick="openWindow('browser')">
+            <div class="icon-image icon-chrome">🌐</div>
+            <div class="icon-label">Browser</div>
+        </div>
+        <div class="icon" ondblclick="openWindow('browser')">
+            <div class="icon-image icon-edge">🌊</div>
+            <div class="icon-label">Edge</div>
+        </div>
+        <div class="icon" ondblclick="openWindow('notepad')">
+            <div class="icon-image icon-notepad">📝</div>
+            <div class="icon-label">Notepad</div>
+        </div>
+        <div class="icon" ondblclick="openWindow('settings')">
+            <div class="icon-image icon-settings">⚙️</div>
+            <div class="icon-label">Settings</div>
+        </div>
+        <div class="icon" ondblclick="openWindow('word')">
+            <div class="icon-image icon-word">📘</div>
+            <div class="icon-label">Word</div>
+        </div>
+        <div class="icon" ondblclick="openWindow('excel')">
+            <div class="icon-image icon-excel">📊</div>
+            <div class="icon-label">Excel</div>
+        </div>
+    </div>
+
+    <!-- Windows -->
+    <!-- File Manager -->
+    <div class="window" id="fileManager" style="width: 800px; height: 500px; top: 100px; left: 100px;">
+        <div class="window-titlebar" onmousedown="startDrag(event, 'fileManager')">
+            <span class="window-icon">📁</span>
+            <span class="window-title">File Explorer</span>
+            <div class="window-controls">
+                <button class="window-control" onclick="minimizeWindow('fileManager')">─</button>
+                <button class="window-control" onclick="toggleMaximize('fileManager')">□</button>
+                <button class="window-control close" onclick="closeWindow('fileManager')">✕</button>
+            </div>
+        </div>
+        <div class="file-manager-toolbar">
+            <button class="toolbar-btn">← Back</button>
+            <button class="toolbar-btn">→ Forward</button>
+            <button class="toolbar-btn">↑ Up</button>
+            <button class="toolbar-btn">⟳ Refresh</button>
+        </div>
+        <div class="file-manager-content">
+            <div class="file-sidebar">
+                <div class="sidebar-item">🏠 Home</div>
+                <div class="sidebar-item">📄 Documents</div>
+                <div class="sidebar-item">📥 Downloads</div>
+                <div class="sidebar-item">🖼️ Pictures</div>
+                <div class="sidebar-item">🎵 Music</div>
+                <div class="sidebar-item">🎬 Videos</div>
+                <div class="sidebar-item">💾 This PC</div>
+            </div>
+            <div class="file-main">
+                <h3>Quick Access</h3>
+                <div class="file-item">
+                    <div class="file-item-icon">📁</div>
+                    <div>My Documents</div>
+                </div>
+                <div class="file-item">
+                    <div class="file-item-icon">📁</div>
+                    <div>Projects</div>
+                </div>
+                <div class="file-item">
+                    <div class="file-item-icon">📄</div>
+                    <div>Report.docx</div>
+                </div>
+                <div class="file-item">
+                    <div class="file-item-icon">📊</div>
+                    <div>Budget.xlsx</div>
+                </div>
+                <div class="file-item">
+                    <div class="file-item-icon">🖼️</div>
+                    <div>Photo.jpg</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notepad -->
+    <div class="window" id="notepad" style="width: 600px; height: 400px; top: 120px; left: 150px;">
+        <div class="window-titlebar" onmousedown="startDrag(event, 'notepad')">
+            <span class="window-icon">📝</span>
+            <span class="window-title">Notepad - Untitled</span>
+            <div class="window-controls">
+                <button class="window-control" onclick="minimizeWindow('notepad')">─</button>
+                <button class="window-control" onclick="toggleMaximize('notepad')">□</button>
+                <button class="window-control close" onclick="closeWindow('notepad')">✕</button>
+            </div>
+        </div>
+        <div class="notepad-toolbar">
+            <button class="toolbar-btn">File</button>
+            <button class="toolbar-btn">Edit</button>
+            <button class="toolbar-btn">Format</button>
+            <button class="toolbar-btn">View</button>
+            <button class="toolbar-btn">Help</button>
+        </div>
+        <div class="window-content">
+            <textarea class="notepad-textarea" placeholder="Start typing..."></textarea>
+        </div>
+    </div>
+
+    <!-- Browser -->
+    <div class="window" id="browser" style="width: 900px; height: 600px; top: 80px; left: 200px;">
+        <div class="window-titlebar" onmousedown="startDrag(event, 'browser')">
+            <span class="window-icon">🌐</span>
+            <span class="window-title">Web Browser</span>
+            <div class="window-controls">
+                <button class="window-control" onclick="minimizeWindow('browser')">─</button>
+                <button class="window-control" onclick="toggleMaximize('browser')">□</button>
+                <button class="window-control close" onclick="closeWindow('browser')">✕</button>
+            </div>
+        </div>
+        <div class="browser-toolbar">
+            <button class="browser-btn">←</button>
+            <button class="browser-btn">→</button>
+            <button class="browser-btn">⟳</button>
+            <input type="text" class="browser-url" value="https://www.example.com" />
+            <button class="browser-btn">⋮</button>
+        </div>
+        <div class="window-content browser-content">
+            <h1>Welcome to the Browser</h1>
+            <p>This is a simulated web browser interface.</p>
+            <h2>Popular Sites</h2>
+            <ul>
+                <li>🔍 Search Engine</li>
+                <li>📧 Email</li>
+                <li>📰 News</li>
+                <li>🎬 Videos</li>
+                <li>🛒 Shopping</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="window" id="settings" style="width: 800px; height: 550px; top: 90px; left: 250px;">
+        <div class="window-titlebar" onmousedown="startDrag(event, 'settings')">
+            <span class="window-icon">⚙️</span>
+            <span class="window-title">Settings</span>
+            <div class="window-controls">
+                <button class="window-control" onclick="minimizeWindow('settings')">─</button>
+                <button class="window-control" onclick="toggleMaximize('settings')">□</button>
+                <button class="window-control close" onclick="closeWindow('settings')">✕</button>
+            </div>
+        </div>
+        <div class="window-content settings-content">
+            <div class="settings-sidebar">
+                <div class="settings-item">🖥️ System</div>
+                <div class="settings-item">📱 Devices</div>
+                <div class="settings-item">📶 Network</div>
+                <div class="settings-item">🎨 Personalization</div>
+                <div class="settings-item">🔐 Privacy</div>
+                <div class="settings-item">🔄 Update</div>
+            </div>
+            <div class="settings-main">
+                <div class="settings-section">
+                    <h2>System</h2>
+                    <div class="settings-option">
+                        <div>
+                            <strong>Display</strong>
+                            <div style="font-size: 12px; color: #666;">Adjust brightness, resolution</div>
+                        </div>
+                        <span>→</span>
+                    </div>
+                    <div class="settings-option">
+                        <div>
+                            <strong>Sound</strong>
+                            <div style="font-size: 12px; color: #666;">Volume, output devices</div>
+                        </div>
+                        <span>→</span>
+                    </div>
+                    <div class="settings-option">
+                        <div>
+                            <strong>Notifications</strong>
+                            <div style="font-size: 12px; color: #666;">App notifications, focus assist</div>
+                        </div>
+                        <span>→</span>
+                    </div>
+                    <div class="settings-option">
+                        <div>
+                            <strong>Power & Battery</strong>
+                            <div style="font-size: 12px; color: #666;">Sleep, battery saver</div>
+                        </div>
+                        <span>→</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Word -->
+    <div class="window" id="word" style="width: 850px; height: 600px; top: 70px; left: 180px;">
+        <div class="window-titlebar" onmousedown="startDrag(event, 'word')">
+            <span class="window-icon">📘</span>
+            <span class="window-title">Word - Document1</span>
+            <div class="window-controls">
+                <button class="window-control" onclick="minimizeWindow('word')">─</button>
+                <button class="window-control" onclick="toggleMaximize('word')">□</button>
+                <button class="window-control close" onclick="closeWindow('word')">✕</button>
+            </div>
+        </div>
+        <div class="office-toolbar">
+            <span>File</span>
+            <span>Home</span>
+            <span>Insert</span>
+            <span>Layout</span>
+            <span>Review</span>
+            <span>View</span>
+        </div>
+        <div class="office-ribbon">
+            <button class="toolbar-btn">📋 Paste</button>
+            <button class="toolbar-btn">✂️ Cut</button>
+            <button class="toolbar-btn">📄 Copy</button>
+            <button class="toolbar-btn"><strong>B</strong></button>
+            <button class="toolbar-btn"><em>I</em></button>
+            <button class="toolbar-btn"><u>U</u></button>
+        </div>
+        <div class="window-content office-content" contenteditable="true">
+            <h1>Document Title</h1>
+            <p>Start typing your document here...</p>
+        </div>
+    </div>
+
+    <!-- Excel -->
+    <div class="window" id="excel" style="width: 900px; height: 600px; top: 60px; left: 160px;">
+        <div class="window-titlebar" onmousedown="startDrag(event, 'excel')">
+            <span class="window-icon">📊</span>
+            <span class="window-title">Excel - Book1</span>
+            <div class="window-controls">
+                <button class="window-control" onclick="minimizeWindow('excel')">─</button>
+                <button class="window-control" onclick="toggleMaximize('excel')">□</button>
+                <button class="window-control close" onclick="closeWindow('excel')">✕</button>
+            </div>
+        </div>
+        <div class="office-toolbar">
+            <span>File</span>
+            <span>Home</span>
+            <span>Insert</span>
+            <span>Formulas</span>
+            <span>Data</span>
+            <span>Review</span>
+        </div>
+        <div class="office-ribbon">
+            <button class="toolbar-btn">📋 Paste</button>
+            <button class="toolbar-btn">Σ Sum</button>
+            <button class="toolbar-btn">📊 Chart</button>
+            <button class="toolbar-btn">🔢 Format</button>
+        </div>
+        <div class="window-content" style="padding: 0; overflow: auto;">
+            <div class="excel-grid" id="excelGrid"></div>
+        </div>
+    </div>
+
+    <!-- Start Menu -->
+    <div class="start-menu" id="startMenu">
+        <div class="start-menu-header">
+            <input type="text" class="start-menu-search" placeholder="Type here to search" />
+        </div>
+        <div class="pinned-apps">
+            <h3>Pinned</h3>
+            <div class="app-grid">
+                <div class="app-item" onclick="openWindow('fileManager'); toggleStartMenu()">
+                    <div class="app-item-icon">📁</div>
+                    <div class="app-item-name">File Explorer</div>
+                </div>
+                <div class="app-item" onclick="openWindow('browser'); toggleStartMenu()">
+                    <div class="app-item-icon">🌐</div>
+                    <div class="app-item-name">Browser</div>
+                </div>
+                <div class="app-item" onclick="openWindow('notepad'); toggleStartMenu()">
+                    <div class="app-item-icon">📝</div>
+                    <div class="app-item-name">Notepad</div>
+                </div>
+                <div class="app-item" onclick="openWindow('settings'); toggleStartMenu()">
+                    <div class="app-item-icon">⚙️</div>
+                    <div class="app-item-name">Settings</div>
+                </div>
+                <div class="app-item" onclick="openWindow('word'); toggleStartMenu()">
+                    <div class="app-item-icon">📘</div>
+                    <div class="app-item-name">Word</div>
+                </div>
+                <div class="app-item" onclick="openWindow('excel'); toggleStartMenu()">
+                    <div class="app-item-icon">📊</div>
+                    <div class="app-item-name">Excel</div>
+                </div>
+                <div class="app-item">
+                    <div class="app-item-icon">📧</div>
+                    <div class="app-item-name">Mail</div>
+                </div>
+                <div class="app-item">
+                    <div class="app-item-icon">📅</div>
+                    <div class="app-item-name">Calendar</div>
+                </div>
+                <div class="app-item">
+                    <div class="app-item-icon">🎵</div>
+                    <div class="app-item-name">Music</div>
+                </div>
+                <div class="app-item">
+                    <div class="app-item-icon">🖼️</div>
+                    <div class="app-item-name">Photos</div>
+                </div>
+                <div class="app-item">
+                    <div class="app-item-icon">🎮</div>
+                    <div class="app-item-name">Games</div>
+                </div>
+                <div class="app-item">
+                    <div class="app-item-icon">🛒</div>
+                    <div class="app-item-name">Store</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Volume Panel -->
+    <div class="volume-panel" id="volumePanel">
+        <div class="volume-icon-display">🔊</div>
+        <input type="range" class="volume-slider" min="0" max="100" value="85" id="volumeSlider" orient="vertical" />
+        <div id="volumeValue">85%</div>
+    </div>
+
+    <!-- Battery Panel -->
+    <div class="battery-panel" id="batteryPanel">
+        <div class="battery-status">
+            <div style="font-size: 32px;">🔋</div>
+            <div>
+                <div class="battery-percentage">85%</div>
+                <div style="font-size: 12px; color: #666;">4 hours 32 minutes remaining</div>
+            </div>
+        </div>
+        <div class="battery-bar">
+            <div class="battery-fill" id="batteryFill"></div>
+        </div>
+        <div style="margin-top: 16px; font-size: 13px;">
+            <div style="margin-bottom: 8px;">
+                <input type="checkbox" id="batterySaver" />
+                <label for="batterySaver">Battery saver</label>
+            </div>
+            <div>
+                <input type="checkbox" id="powerMode" />
+                <label for="powerMode">Best performance</label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Taskbar -->
+    <div class="taskbar">
+        <button class="start-button" onclick="toggleStartMenu()">⊞</button>
+        <input type="text" class="search-box" placeholder="Type to search" id="searchBox" />
+        
+        <div class="taskbar-apps">
+            <button class="taskbar-icon" onclick="openWindow('fileManager')" title="File Explorer">📁</button>
+            <button class="taskbar-icon" onclick="openWindow('browser')" title="Browser">🌐</button>
+            <button class="taskbar-icon" onclick="openWindow('notepad')" title="Notepad">📝</button>
+            <button class="taskbar-icon" onclick="openWindow('word')" title="Word">📘</button>
+            <button class="taskbar-icon" onclick="openWindow('excel')" title="Excel">📊</button>
+        </div>
+
+        <div class="system-tray">
+            <div class="tray-icon">📶</div>
+            <div class="tray-icon" onclick="toggleVolumePanel()">🔊</div>
+            <div class="tray-icon" onclick="toggleBatteryPanel()">🔋</div>
+            <div class="time-date">
+                <div id="time">12:00 PM</div>
+                <div id="date">2/12/2026</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Time and Date
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+            });
+            const dateStr = now.toLocaleDateString('en-US', { 
+                month: 'numeric', 
+                day: 'numeric',
+                year: 'numeric'
+            });
+            
+            document.getElementById('time').textContent = timeStr;
+            document.getElementById('date').textContent = dateStr;
+        }
+
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Window Management
+        let dragElement = null;
+        let offsetX, offsetY;
+
+        function openWindow(windowId) {
+            const win = document.getElementById(windowId);
+            win.classList.add('active');
+            bringToFront(win);
+        }
+
+        function closeWindow(windowId) {
+            document.getElementById(windowId).classList.remove('active');
+        }
+
+        function minimizeWindow(windowId) {
+            document.getElementById(windowId).classList.remove('active');
+        }
+
+        function toggleMaximize(windowId) {
+            document.getElementById(windowId).classList.toggle('maximized');
+        }
+
+        function bringToFront(element) {
+            const windows = document.querySelectorAll('.window');
+            windows.forEach(w => w.style.zIndex = 100);
+            element.style.zIndex = 101;
+        }
+
+        function startDrag(e, windowId) {
+            if (e.target.closest('.window-control')) return;
+            
+            dragElement = document.getElementById(windowId);
+            const rect = dragElement.getBoundingClientRect();
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+            
+            bringToFront(dragElement);
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+        }
+
+        function drag(e) {
+            if (!dragElement || dragElement.classList.contains('maximized')) return;
+            
+            dragElement.style.left = (e.clientX - offsetX) + 'px';
+            dragElement.style.top = (e.clientY - offsetY) + 'px';
+        }
+
+        function stopDrag() {
+            dragElement = null;
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+        }
+
+        // Start Menu
+        function toggleStartMenu() {
+            document.getElementById('startMenu').classList.toggle('active');
+        }
+
+        // Click outside to close
+        document.addEventListener('click', (e) => {
+            const startMenu = document.getElementById('startMenu');
+            const startButton = document.querySelector('.start-button');
+            
+            if (!startMenu.contains(e.target) && !startButton.contains(e.target)) {
+                startMenu.classList.remove('active');
+            }
+        });
+
+        // Volume Panel
+        function toggleVolumePanel() {
+            const panel = document.getElementById('volumePanel');
+            const batteryPanel = document.getElementById('batteryPanel');
+            batteryPanel.classList.remove('active');
+            panel.classList.toggle('active');
+        }
+
+        document.getElementById('volumeSlider').addEventListener('input', (e) => {
+            document.getElementById('volumeValue').textContent = e.target.value + '%';
+        });
+
+        // Battery Panel
+        function toggleBatteryPanel() {
+            const panel = document.getElementById('batteryPanel');
+            const volumePanel = document.getElementById('volumePanel');
+            volumePanel.classList.remove('active');
+            panel.classList.toggle('active');
+        }
+
+        // Close panels when clicking outside
+        document.addEventListener('click', (e) => {
+            const volumePanel = document.getElementById('volumePanel');
+            const batteryPanel = document.getElementById('batteryPanel');
+            const volumeIcon = document.querySelector('.tray-icon:nth-child(2)');
+            const batteryIcon = document.querySelector('.tray-icon:nth-child(3)');
+            
+            if (!volumePanel.contains(e.target) && !volumeIcon.contains(e.target)) {
+                volumePanel.classList.remove('active');
+            }
+            
+            if (!batteryPanel.contains(e.target) && !batteryIcon.contains(e.target)) {
+                batteryPanel.classList.remove('active');
+            }
+        });
+
+        // Excel Grid Generation
+        function createExcelGrid() {
+            const grid = document.getElementById('excelGrid');
+            const cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+            
+            // Header row
+            grid.innerHTML = '<div class="excel-cell header"></div>';
+            cols.forEach(col => {
+                grid.innerHTML += `<div class="excel-cell header">${col}</div>`;
+            });
+            
+            // Data rows
+            for (let row = 1; row <= 20; row++) {
+                grid.innerHTML += `<div class="excel-cell header">${row}</div>`;
+                for (let col = 0; col < 10; col++) {
+                    grid.innerHTML += `<div class="excel-cell"><input type="text" /></div>`;
+                }
+            }
+        }
+
+        createExcelGrid();
+
+        // Search functionality
+        document.getElementById('searchBox').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            if (query.includes('file') || query.includes('folder')) {
+                // Could trigger file search
+            } else if (query.includes('settings')) {
+                // Could open settings
+            }
+        });
+
+        // Taskbar icon active states
+        document.querySelectorAll('.taskbar-icon').forEach(icon => {
+            icon.addEventListener('click', function() {
+                document.querySelectorAll('.taskbar-icon').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Make windows clickable to bring to front
+        document.querySelectorAll('.window').forEach(win => {
+            win.addEventListener('mousedown', () => {
+                bringToFront(win);
+            });
+        });
+    </script>
+</body>
+</html>
