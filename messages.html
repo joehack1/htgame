@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes, viewport-fit=cover">
+  <title>Messages — functional chat UI</title>
+  <!-- Material Icons + Google Fonts -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ---------- GLOBAL RESET / DARK THEME ---------- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0b0c0e;
+      font-family: 'Google Sans', 'Roboto', Helvetica, Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+    }
+
+    /* Main app container — exactly like Google Messages conversation list + chat detail */
+    .messages-app {
+      max-width: 480px;
+      width: 100%;
+      background: #101010;
+      border-radius: 28px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.8);
+      border: 1px solid #2a2a2a;
+      overflow: hidden;
+      position: relative;
+      height: 780px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---------- SCREENS (list / chat) ---------- */
+    .screen {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+      background: #101010;
+      transition: transform 0.2s ease-out;
+    }
+
+    .conversation-list {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow-y: auto;
+      background: #101010;
+      scrollbar-width: thin;
+      scrollbar-color: #5f6368 #1e1f20;
+    }
+
+    .conversation-list::-webkit-scrollbar {
+      width: 5px;
+    }
+    .conversation-list::-webkit-scrollbar-thumb {
+      background: #5f6368;
+      border-radius: 10px;
+    }
+
+    /* ---------- CHAT DETAIL VIEW (hidden by default) ---------- */
+    .chat-detail {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+      background: #0e0f0f;
+    }
+
+    .chat-detail.active {
+      display: flex;
+    }
+
+    /* ----- HEADER (common) ----- */
+    .app-header {
+      padding: 12px 16px 8px 16px;
+      background: #101010;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #2c2c2c;
+    }
+
+    .chat-header {
+      background: #101010;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid #2c2c2c;
+    }
+
+    .back-btn {
+      background: transparent;
+      border: none;
+      color: #8ab4f8;
+      font-size: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+    }
+    .back-btn:hover {
+      background: #282a2d;
+    }
+
+    .chat-title {
+      font-size: 18px;
+      font-weight: 500;
+      color: #e8eaed;
+      flex: 1;
+    }
+
+    .header-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #2a2a2a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #bdc1c6;
+    }
+
+    /* search bar */
+    .search-bar {
+      background: #1e1f20;
+      margin: 8px 16px 12px 16px;
+      padding: 6px 16px;
+      border-radius: 30px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #9aa0a6;
+    }
+
+    .search-bar input {
+      background: transparent;
+      border: none;
+      width: 100%;
+      font-size: 16px;
+      color: #e8eaed;
+      outline: none;
+    }
+
+    /* ---------- CONVERSATION ROW ---------- */
+    .conversation-row {
+      display: flex;
+      padding: 12px 16px;
+      background: #101010;
+      border-bottom: 1px solid #26282b;
+      transition: background 0.1s;
+      cursor: pointer;
+    }
+    .conversation-row:hover {
+      background: #1d1e1e;
+    }
+
+    .conv-avatar {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: #1e1f20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 16px;
+      flex-shrink: 0;
+      font-size: 20px;
+      font-weight: 500;
+      color: #e8eaed;
+      text-transform: uppercase;
+    }
+
+    /* color variants */
+    .avatar-mpesa { background: #006b4c; }
+    .avatar-airtel { background: #8b1e3f; }
+    .avatar-saf { background: #1f4c3c; }
+    .avatar-shaddy { background: #3a3f44; }
+    .avatar-reversal { background: #37474f; }
+    .avatar-betika { background: #b34b1f; }
+
+    .conv-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .conv-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px;
+    }
+
+    .conv-name {
+      font-size: 16px;
+      font-weight: 500;
+      color: #e8eaed;
+    }
+
+    .conv-time {
+      font-size: 12px;
+      color: #9aa0a6;
+    }
+
+    .conv-snippet {
+      font-size: 14px;
+      color: #9aa0a6;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .material-icons.small-icon {
+      font-size: 16px;
+      color: #8ab4f8;
+    }
+
+    .new-badge {
+      background: #8ab4f8;
+      color: #202124;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin-left: 8px;
+    }
+
+    /* ---------- CHAT BUBBLES (dummy conversation) ---------- */
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #0a0b0c;
+    }
+
+    .message-row {
+      display: flex;
+      align-items: flex-end;
+      margin-bottom: 4px;
+    }
+
+    .message-bubble {
+      max-width: 80%;
+      padding: 12px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      line-height: 1.5;
+      position: relative;
+      word-break: break-word;
+    }
+
+    .incoming {
+      background: #1e1f20;
+      color: #e8eaed;
+      border-bottom-left-radius: 4px;
+      align-self: flex-start;
+    }
+
+    .outgoing {
+      background: #0047ab;
+      color: white;
+      border-bottom-right-radius: 4px;
+      margin-left: auto;
+    }
+
+    .message-time {
+      font-size: 11px;
+      color: #9aa0a6;
+      margin-top: 4px;
+      margin-left: 8px;
+      margin-right: 8px;
+    }
+
+    .chat-footer {
+      padding: 12px 16px;
+      background: #101010;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-top: 1px solid #2c2c2c;
+    }
+
+    .chat-footer input {
+      flex: 1;
+      background: #1e1f20;
+      border: none;
+      border-radius: 30px;
+      padding: 12px 18px;
+      color: #e8eaed;
+      font-size: 15px;
+      outline: none;
+    }
+
+    .chat-footer button {
+      background: #0047ab;
+      border: none;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      cursor: pointer;
+    }
+
+    /* dummy messages divider */
+    .date-divider {
+      text-align: center;
+      font-size: 12px;
+      color: #9aa0a6;
+      margin: 12px 0;
+    }
+
+    /* responsive control */
+    .hidden-list {
+      display: none !important;
+    }
+
+    .attribution {
+      padding: 12px;
+      color: #5f6368;
+      font-size: 12px;
+      text-align: center;
+      border-top: 1px solid #2a2a2a;
+    }
+  </style>
+</head>
+<body>
+  <div class="messages-app" id="app">
+    <!-- ========== CONVERSATION LIST SCREEN ========== -->
+    <div id="listScreen" class="screen conversation-list">
+      <!-- header -->
+      <div class="app-header">
+        <div style="display: flex; align-items: center; gap: 20px;">
+          <span class="material-icons" style="color: #bdc1c6;">menu</span>
+          <span style="font-size: 20px; font-weight: 500; color: #e8eaed;">Messages</span>
+        </div>
+        <div class="header-avatar">
+          <span class="material-icons">account_circle</span>
+        </div>
+      </div>
+
+      <!-- search bar -->
+      <div class="search-bar">
+        <span class="material-icons">search</span>
+        <input type="text" placeholder="Search messages">
+      </div>
+
+      <!-- ===== CONVERSATION ROWS (click to open chat) ===== -->
+      <div style="flex:1; overflow-y: auto;" id="convListContainer">
+        <!-- MPESA main -->
+        <div class="conversation-row" data-chat="mpesa_main">
+          <div class="conv-avatar avatar-mpesa">M</div>
+          <div class="conv-details">
+            <div class="conv-header">
+              <span class="conv-name">MPESA</span>
+              <span class="conv-time">1:54 PM</span>
+            </div>
+            <div class="conv-snippet">
+              <span class="material-icons small-icon">lock</span>
+              <span>3039917 on 12/2/26 at 1:54 PM <span style="color:#8ab4f8;">New</span> · Balance Ksh1,000.00</span>
+            </div>
+          </div>
+        </div>
+        <!-- LINNA AKAIO -->
+        <div class="conversation-row" data-chat="linna">
+          <div class="conv-avatar avatar-mpesa">L</div>
+          <div class="conv-details">
+            <div class="conv-header">
+              <span class="conv-name">LINNA AKAIO</span>
+              <span class="conv-time">2:01 PM</span>
+            </div>
+            <div class="conv-snippet">
+              <span>UBC9N6DK89 · sent Ksh800.00, balance 0.00</span>
+            </div>
+          </div>
+        </div>
+        <!-- Fuliza detail 122.20 -->
+        <div class="conversation-row" data-chat="fuliza1">
+          <div class="conv-avatar avatar-mpesa">F</div>
+          <div class="conv-details">
+            <div class="conv-header">
+              <span class="conv-name">Fuliza M-PESA</span>
+              <span class="conv-time">2:01 PM</span>
+            </div>
+            <div class="conv-snippet">
+              <span>Fuliza 120.99, fee 1.21, total due 122.20</span>
+            </div>
+          </div>
+        </div>
+        <!-- CHARLES OTIENO -->
+        <div class="conversation-row" data-chat="charles">
+          <div class="conv-avatar avatar-mpesa">C</div>
+          <div class="conv-details">
+            <div class="conv-header">
+              <span class="conv-name">CHARLES OTIEINO</span>
+              <span class="conv-time">2:18 PM</span>
+            </div>
+            <div class="conv-snippet">
+              <span>UBC9N6DJ5Y · sent Ksh200.00, balance 0.00, cost 7.00</span>
+            </div>
+          </div>
+        </div>
+        <!-- Fuliza 207 / 331.27 -->
+        <div class="conversation-row" data-chat="fuliza2">
+          <div class="conv-avatar avatar-mpesa">F</div>
+          <div class="conv-details">
+            <div class="conv-header">
+              <span class="conv-name">Fuliza outstanding</span>
+              <span class="conv-time">14:18</span>
+            </div>
+            <div class="conv-snippet">
+              <span>UBC9N6DJ5Y · Fuliza 207.00, total 331.27 due 14/03</span>
+            </div>
+            <div class="sub-snippet" style="font-size:12px; color:#fdd663;">saf Joe</div>
+          </div>
+        </div>
+        <!-- Airtel -->
+        <div class="conversation-row" data-chat="airtel">
+          <div class="conv-avatar avatar-airtel">A</div>
+          <div class="conv-details">
+            <div class="conv-header">
+              <span class="conv-name">Airtel</span>
+              <span class="conv-time">13:36</span>
+            </div>
+            <div class="conv-snippet">
+              <span>Talk nonstop 7d · FREE Airtel calls +100 AllNet mins @80 bob</span>
+            </div>
+          </div>
+        </div>
+        <!-- Safaricom -->
+        <div class="conversation-row" data-chat="safaricom">
+          <div class="conv-avatar avatar-saf">S</div>
+          <div class="conv-details">
+            <div class="conv-header">
+              <span class="conv-name">Safaricom</span>
+              <span class="conv-time">13:00</span>
+            </div>
+            <div class="conv-snippet">
+              <span>Last Call: 0 sec. Airtime 7.62 KSH · B-LIVE bundles</span>
+            </div>
+          </div>
+        </div>
+        <!-- 0783 040328 -->
+        <div class="conversation-row" data-chat="mzigo">
+          <div class="conv-avatar">0783</div>
+          <div class="conv-details">
+            <div class="conv-header">
+              <span class="conv-name">0783 040328</span>
+              <span class="conv-time">09:03</span>
+            </div>
+            <div class="conv-snippet">
+              <span>You: Niliacha mzigo yangu kwa gari please ukipitia wonder joy ni...</span>
+            </div>
+          </div>
+        </div>
+        <!-- Shaddy Airtel -->
+        <div class="conversation-row" data-chat="shaddy">
+          <div class="conv-avatar avatar-shaddy">SA</div>
+          <div class="conv-details">
+            <div class="conv-header">
+              <span class="conv-name">Shaddy Airtel</span>
+              <span class="conv-time">07:22</span>
+            </div>
+            <div class="conv-snippet">
+              <span>Yoo, ni kama nitaiingia mabaadae leo</span>
+            </div>
+          </div>
+        </div>
+        <!-- SAF_Balance -->
+        <div class="conversation-row" data-chat="safbalance">
+          <div class="conv-avatar avatar-saf">SB</div>
+          <div class="conv-details">
+            <div class="conv-header">
+              <span class="conv-name">SAF_Balance</span>
+              <span class="conv-time">Wed</span>
+            </div>
+            <div class="conv-snippet">
+              <span>Data 45MB · 1GB YouTube @ksh10</span>
+            </div>
+          </div>
+        </div>
+        <!-- Nicholas Ok -->
+        <div class="conversation-row" data-chat="nicholas">
+          <div class="conv-avatar">NK</div>
+          <div class="conv-details">
+            <div class="conv-header">
+              <span class="conv-name">Nicholas Ok</span>
+              <span class="conv-time">Wed</span>
+            </div>
+            <div class="conv-snippet">
+              <span>Nipigie simu nitoroke mahali 🥰 niulize files niseme nakuja</span>
+            </div>
+          </div>
+        </div>
+        <!-- REVERSAL -->
+        <div class="conversation-row" data-chat="reversal">
+          <div class="conv-avatar avatar-reversal">R</div>
+          <div class="conv-details">
+            <div class="conv-header">
+              <span class="conv-name">REVERSAL</span>
+              <span class="conv-time">Wed</span>
+            </div>
+            <div class="conv-snippet">
+              <span>M-PESA reversal UBB9N68YO9 successful. Hakikisha...</span>
+            </div>
+          </div>
+        </div>
+        <!-- 0708 721300 -->
+        <div class="conversation-row" data-chat="fifty">
+          <div class="conv-avatar">0708</div>
+          <div class="conv-details">
+            <div class="conv-header">
+              <span class="conv-name">0708 721300</span>
+              <span class="conv-time">Wed</span>
+            </div>
+            <div class="conv-snippet">
+              <span>You: Nirudishie hiyo 50 please nimekosea nalipa fare</span>
+            </div>
+          </div>
+        </div>
+        <!-- BETIKA -->
+        <div class="conversation-row" data-chat="betika">
+          <div class="conv-avatar avatar-betika">B</div>
+          <div class="conv-details">
+            <div class="conv-header">
+              <span class="conv-name">BETIKA</span>
+              <span class="conv-time">Wed</span>
+            </div>
+            <div class="conv-snippet">
+              <span>BABP4A KSH 166.5 WON! 🎉</span>
+            </div>
+          </div>
+        </div>
+        <!-- INTERNET -->
+        <div class="conversation-row" data-chat="internet">
+          <div class="conv-avatar" style="background:#2a4a5a;">I</div>
+          <div class="conv-details">
+            <div class="conv-header">
+              <span class="conv-name">INTERNET</span>
+              <span class="conv-time">Wed</span>
+            </div>
+            <div class="conv-snippet">
+              <span>Handset configured. Download MyAirtel App</span>
+            </div>
+          </div>
+        </div>
+        <!-- footer attribution -->
+        <div class="attribution">15 conversations • tap to chat</div>
+      </div>
+    </div>
+
+    <!-- ========== CHAT DETAIL VIEW (DYNAMIC) ========== -->
+    <div id="chatDetailScreen" class="screen chat-detail">
+      <!-- chat header (dynamic) -->
+      <div class="chat-header" id="chatHeader">
+        <button class="back-btn" id="backToListBtn">
+          <span class="material-icons">arrow_back</span>
+        </button>
+        <div class="conv-avatar" id="chatAvatar" style="width:44px; height:44px;">M</div>
+        <div class="chat-title" id="chatTitle">MPESA</div>
+        <span class="material-icons" style="color:#bdc1c6;">more_vert</span>
+      </div>
+
+      <!-- message bubbles area (dummy per chat) -->
+      <div class="chat-messages" id="chatMessagesArea">
+        <!-- will be populated by js -->
+      </div>
+
+      <!-- message composer (just for show) -->
+      <div class="chat-footer">
+        <span class="material-icons" style="color:#bdc1c6;">add_circle</span>
+        <input type="text" placeholder="Text message">
+        <button><span class="material-icons">send</span></button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      "use strict";
+
+      // ----- DOM elements -----
+      const listScreen = document.getElementById('listScreen');
+      const detailScreen = document.getElementById('chatDetailScreen');
+      const backBtn = document.getElementById('backToListBtn');
+      const chatAvatar = document.getElementById('chatAvatar');
+      const chatTitle = document.getElementById('chatTitle');
+      const chatMessagesArea = document.getElementById('chatMessagesArea');
+
+      // ----- DUMMY CHAT DATA : full conversations for each contact -----
+      const chatDatabase = {
+        mpesa_main: {
+          name: 'MPESA',
+          avatar: 'M',
+          avatarClass: 'avatar-mpesa',
+          messages: [
+            { type: 'incoming', text: '3039917 on 12/2/26 at 1:54 PM New\nM-PESA balance is Ksh1,000.00. Separate personal and business funds through Pochi la Biashara on *334#.', time: '1:54 PM' },
+            { type: 'incoming', text: 'UBC9N6DK89 Confirmed. Ksh800.00 sent to LINNA AKAIO792357202 on 12/2/26 at 2:01 PM. New M-PESA balance is Ksh0.00. Transaction cost, Ksh13.00. Amount you can transact within the day is 499,150.00. Earn interest daily on Ziidi MMF, Dial *334#', time: '2:01 PM' },
+            { type: 'outgoing', text: 'Thank you!', time: '2:03 PM' }
+          ]
+        },
+        linna: {
+          name: 'LINNA AKAIO',
+          avatar: 'L',
+          avatarClass: 'avatar-mpesa',
+          messages: [
+            { type: 'incoming', text: 'UBC9N6DK89 Confirmed. Ksh800.00 sent to LINNA AKAIO792357202 on 12/2/26 at 2:01 PM. New M-PESA balance is Ksh0.00. Transaction cost, Ksh13.00.', time: '2:01 PM' },
+            { type: 'outgoing', text: 'Nimepokea asee! 🙏', time: '2:05 PM' },
+          ]
+        },
+        fuliza1: {
+          name: 'Fuliza M-PESA',
+          avatar: 'F',
+          avatarClass: 'avatar-mpesa',
+          messages: [
+            { type: 'incoming', text: 'UBC9N6DK89 Confirmed. Fuliza M-Pesa amount is Ksh 120.99. Access Fee charged Ksh 1.21. Total Fuliza M-Pesa outstanding amount is Ksh122.20 due on 14/03/26. To check daily charges, Dial *234*0#OK Select Query Charges', time: '2:01 PM' }
+          ]
+        },
+        charles: {
+          name: 'CHARLES OTIEINO',
+          avatar: 'C',
+          avatarClass: 'avatar-mpesa',
+          messages: [
+            { type: 'incoming', text: 'UBC9N6DJ5Y Confirmed. Ksh200.00 sent to CHARLES OTIEINO0792939250 on 12/2/26 at 2:18 PM. New M-PESA balance is Ksh0.00. Transaction cost, Ksh7.00.', time: '2:18 PM' },
+            { type: 'outgoing', text: 'Nimesend, check', time: '2:19 PM' }
+          ]
+        },
+        fuliza2: {
+          name: 'Fuliza outstanding',
+          avatar: 'F',
+          avatarClass: 'avatar-mpesa',
+          messages: [
+            { type: 'incoming', text: 'UBC9N6DJ5Y Confirmed. Fuliza M-Pesa amount is Ksh 207.00. Access Fee charged Ksh 2.07. Total Fuliza M-Pesa outstanding amount is Ksh331.27 due on 14/03/26. To check daily charges, Dial *234*0#OK Select Query Charges', time: '14:18' },
+            { type: 'incoming', text: 'saf Joe · Fuliza limit updated', time: '14:18' }
+          ]
+        },
+        airtel: {
+          name: 'Airtel',
+          avatar: 'A',
+          avatarClass: 'avatar-airtel',
+          messages: [
+            { type: 'incoming', text: 'Talk nonstop for 7 days! You get FREE Airtel calls + 100 AllNet mins & SMS @80 bob, valid 7 days. Dial *544# to buy now!', time: '13:36' }
+          ]
+        },
+        safaricom: {
+          name: 'Safaricom',
+          avatar: 'S',
+          avatarClass: 'avatar-saf',
+          messages: [
+            { type: 'incoming', text: 'Last Call Duration: 0 sec. Airtime Balance: 7.62 KSH. Browse, chat & stream all you want with B-LIVE bundles. Dial *544# & select...', time: '13:00' }
+          ]
+        },
+        mzigo: {
+          name: '0783 040328',
+          avatar: '0783',
+          avatarClass: '',
+          messages: [
+            { type: 'outgoing', text: 'Niliacha mzigo yangu kwa gari please ukipitia wonder joy ni...', time: '09:03' },
+            { type: 'incoming', text: 'Sawa, nitaangalia', time: '09:15' }
+          ]
+        },
+        shaddy: {
+          name: 'Shaddy Airtel',
+          avatar: 'SA',
+          avatarClass: 'avatar-shaddy',
+          messages: [
+            { type: 'incoming', text: 'Yoo, ni kama nitaiingia mabaadae leo', time: '07:22' }
+          ]
+        },
+        safbalance: {
+          name: 'SAF_Balance',
+          avatar: 'SB',
+          avatarClass: 'avatar-saf',
+          messages: [
+            { type: 'incoming', text: 'Dear customer, Your MakeUrBundle Data balance is 45MB. Dial *544# to buy 1GB YouTube bundle for only ksh10 valid thour. click...', time: 'Wed' }
+          ]
+        },
+        nicholas: {
+          name: 'Nicholas Ok',
+          avatar: 'NK',
+          avatarClass: '',
+          messages: [
+            { type: 'incoming', text: 'Nipigie simu nitoroke mahali 🥰 niulize files niseme nakuja', time: 'Wed' }
+          ]
+        },
+        reversal: {
+          name: 'REVERSAL',
+          avatar: 'R',
+          avatarClass: 'avatar-reversal',
+          messages: [
+            { type: 'incoming', text: 'Dear Customer, the M-PESA reversal request for transaction UBB9N68YO9 was successful. Download M-PESA App to Hakikish...', time: 'Wed' }
+          ]
+        },
+        fifty: {
+          name: '0708 721300',
+          avatar: '0708',
+          avatarClass: '',
+          messages: [
+            { type: 'outgoing', text: 'Nirudishie hiyo 50 please nimekosea nalipa fare', time: 'Wed' }
+          ]
+        },
+        betika: {
+          name: 'BETIKA',
+          avatar: 'B',
+          avatarClass: 'avatar-betika',
+          messages: [
+            { type: 'incoming', text: 'Congratulations! BABP4A KSH 166.5 WON.... 🎉', time: 'Wed' }
+          ]
+        },
+        internet: {
+          name: 'INTERNET',
+          avatar: 'I',
+          avatarClass: '',
+          messages: [
+            { type: 'incoming', text: 'Your handset is now configured with Internet set experience, download MyAirtel App by clicking here.', time: 'Wed' }
+          ]
+        }
+      };
+
+      // ----- helper: load chat into detail view -----
+      function openChat(chatId) {
+        const data = chatDatabase[chatId];
+        if (!data) return;
+
+        // set avatar and title
+        chatAvatar.textContent = data.avatar;
+        chatAvatar.className = 'conv-avatar';
+        if (data.avatarClass) chatAvatar.classList.add(data.avatarClass);
+        chatTitle.textContent = data.name;
+
+        // generate message bubbles
+        let html = '';
+        html += '<div class="date-divider">Today</div>';
+        data.messages.forEach(msg => {
+          const align = msg.type === 'incoming' ? 'message-row' : 'message-row';
+          const bubbleClass = msg.type === 'incoming' ? 'incoming' : 'outgoing';
+          html += `<div class="${align}">`;
+          html += `<div class="message-bubble ${bubbleClass}">${msg.text.replace(/\n/g, '<br>')}</div>`;
+          html += `<span class="message-time">${msg.time}</span>`;
+          html += `</div>`;
+        });
+
+        chatMessagesArea.innerHTML = html;
+
+        // switch screens
+        listScreen.classList.add('hidden-list');
+        detailScreen.classList.add('active');
+      }
+
+      // ----- attach click to all conversation rows -----
+      const rows = document.querySelectorAll('.conversation-row');
+      rows.forEach(row => {
+        row.addEventListener('click', function(e) {
+          const chatId = this.dataset.chat;
+          if (chatId) {
+            openChat(chatId);
+          }
+        });
+      });
+
+      // ----- back button -----
+      backBtn.addEventListener('click', function() {
+        listScreen.classList.remove('hidden-list');
+        detailScreen.classList.remove('active');
+      });
+
+      // ----- ensure list visible at start (detail hidden) -----
+      listScreen.classList.remove('hidden-list');
+      detailScreen.classList.remove('active');
+
+      // responsive: set default, add touch enhancements
+    })();
+  </script>
+
+  <style>
+    /* utility */
+    .hidden-list { display: none !important; }
+    .chat-detail.active { display: flex; }
+    .chat-detail { display: none; }
+    .sub-snippet { color: #9aa0a6; font-size: 12px; }
+    /* avatar text color fix */
+    .conv-avatar { color: white; }
+    #chatAvatar { color: white; }
+  </style>
+</body>
+</html>
