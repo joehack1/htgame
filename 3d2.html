@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>3D Forge Pro — Advanced Modeler</title>
+<title>3D Forge Pro — 20 Object Library</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;700;800&display=swap');
@@ -75,7 +75,7 @@
 
   /* ── LEFT PANEL ── */
   .left-panel {
-    width: 200px;
+    width: 240px;
     background: var(--panel);
     border-right: 1px solid var(--border);
     display: flex;
@@ -88,6 +88,16 @@
   .panel-title {
     font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
     color: var(--muted); text-transform: uppercase; margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .badge {
+    background: var(--accent);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 8px;
   }
 
   /* Shape buttons */
@@ -101,6 +111,59 @@
   }
   .shape-btn:hover { border-color: var(--accent); color: var(--accent); background: #1a1a28; }
   .shape-btn svg { width: 20px; height: 20px; }
+
+  /* Object library grid */
+  .library-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+  .library-item {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .library-item:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    background: #1a1a28;
+  }
+  .library-item.selected {
+    border-color: var(--accent);
+    background: #1a1a28;
+    box-shadow: 0 0 10px rgba(124, 92, 252, 0.3);
+  }
+  .library-preview {
+    width: 40px;
+    height: 40px;
+    background: var(--bg);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+  }
+  .library-name {
+    font-size: 8px;
+    color: var(--muted);
+    text-align: center;
+    word-break: break-word;
+  }
+  .library-type {
+    font-size: 7px;
+    color: var(--accent2);
+    text-transform: uppercase;
+  }
 
   /* Tools */
   .tools-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
@@ -122,7 +185,7 @@
   }
 
   /* Scene list */
-  .scene-list { display: flex; flex-direction: column; gap: 2px; }
+  .scene-list { display: flex; flex-direction: column; gap: 2px; max-height: 200px; overflow-y: auto; }
   .scene-item {
     display: flex; align-items: center; gap: 6px;
     padding: 5px 6px; border-radius: 5px; cursor: pointer;
@@ -174,7 +237,7 @@
 
   /* ── RIGHT PANEL ── */
   .right-panel {
-    width: 230px;
+    width: 250px;
     background: var(--panel);
     border-left: 1px solid var(--border);
     display: flex;
@@ -383,6 +446,11 @@
     </div>
 
     <div class="panel-section">
+      <div class="panel-title">Object Library <span class="badge">20</span></div>
+      <div class="library-grid" id="libraryGrid"></div>
+    </div>
+
+    <div class="panel-section">
       <div class="panel-title">Tools</div>
       <div class="tools-grid">
         <div class="tool-btn active" id="tool-select" title="Select" onclick="setTool('select')">⬡</div>
@@ -409,9 +477,8 @@
         <button class="vt-btn" id="btn-wire" onclick="setViewMode('wireframe')">Wire</button>
         <button class="vt-btn" id="btn-both" onclick="setViewMode('both')">Both</button>
         <button class="vt-btn" onclick="resetCamera()">⌖ Reset</button>
-        <button class="vt-btn" onclick="populate20Objects()">⟳ Populate 20</button>
       </div>
-      <div class="grid-info" id="gridInfo">Grid: 1.0 · Snap: ON (Y=1)</div>
+      <div class="grid-info" id="gridInfo">Grid: 1.0 · Library: 20 Objects</div>
       <div class="gizmo">
         <canvas id="gizmoCanvas" width="60" height="60"></canvas>
       </div>
@@ -509,7 +576,6 @@
       <button class="action-btn" onclick="duplicateSelected()">⧉ Duplicate</button>
       <button class="action-btn" onclick="focusSelected()">⊙ Focus Object</button>
       <button class="action-btn" onclick="centerSelected()">⌖ Center to World</button>
-      <button class="action-btn" onclick="populate20Objects()">🌟 Populate 20 Objects</button>
       <button class="action-btn" onclick="clearScene()">✕ Clear Scene</button>
       <button class="action-btn danger" onclick="deleteSelected()">⌫ Delete Selected</button>
     </div>
@@ -521,7 +587,7 @@
   <div>Tool: <span id="statusTool">SELECT</span></div>
   <div>Selected: <span id="statusSel">—</span></div>
   <div>LMB: Orbit &nbsp; RMB: Pan &nbsp; Wheel: Zoom</div>
-  <div style="margin-left:auto">3D FORGE v2.0 · Y=1 Default</div>
+  <div style="margin-left:auto">3D FORGE v2.0 · 20 Object Library</div>
 </div>
 
 <script>
@@ -535,7 +601,7 @@ renderer.setClearColor(0x0d0d14);
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, 1, 0.01, 1000);
-camera.position.set(8, 6, 12);
+camera.position.set(12, 8, 15);
 camera.lookAt(0, 1, 0);
 
 // Grid
@@ -574,9 +640,33 @@ let objCounter = 0;
 // Default Y position
 const DEFAULT_Y = 1;
 
+// Library of 20 predefined objects with names and types
+const OBJECT_LIBRARY = [
+  { name: 'Cube', type: 'box', icon: '⬛', color: '#fc5c7d' },
+  { name: 'Sphere', type: 'sphere', icon: '⚪', color: '#5cfca0' },
+  { name: 'Cylinder', type: 'cylinder', icon: '⎍', color: '#5cd9fc' },
+  { name: 'Cone', type: 'cone', icon: '▲', color: '#f7d060' },
+  { name: 'Torus', type: 'torus', icon: '⭕', color: '#fc5ce7' },
+  { name: 'Plane', type: 'plane', icon: '⬜', color: '#48dbfb' },
+  { name: 'Diamond', type: 'octahedron', icon: '🔷', color: '#ff9ff3' },
+  { name: 'Knot', type: 'torus-knot', icon: '🌀', color: '#54a0ff' },
+  { name: 'Pyramid', type: 'cone', icon: '🔺', color: '#ff6b6b' },
+  { name: 'Pipe', type: 'torus', icon: '◉', color: '#feca57' },
+  { name: 'Ball', type: 'sphere', icon: '●', color: '#5f27cd' },
+  { name: 'Block', type: 'box', icon: '🧊', color: '#c8d6e5' },
+  { name: 'Can', type: 'cylinder', icon: '🥫', color: '#576574' },
+  { name: 'Ring', type: 'torus', icon: '💍', color: '#fc5c7d' },
+  { name: 'Gem', type: 'octahedron', icon: '💎', color: '#5cfca0' },
+  { name: 'Disc', type: 'cylinder', icon: '💿', color: '#7c5cfc' },
+  { name: 'PipeKnot', type: 'torus-knot', icon: '🔗', color: '#ff9a3c' },
+  { name: 'Sheet', type: 'plane', icon: '📄', color: '#48dbfb' },
+  { name: 'Round', type: 'sphere', icon: '🔴', color: '#ff6b6b' },
+  { name: 'Square', type: 'box', icon: '🔲', color: '#54a0ff' }
+];
+
 // ── ORBIT CONTROLS (manual) ────────────────────────────────────────────────
 let orbit = {
-  theta: 0.8, phi: 0.9, radius: 15,
+  theta: 0.8, phi: 0.9, radius: 18,
   target: new THREE.Vector3(0, 1, 0),
   dragging: false, panning: false,
   lastX: 0, lastY: 0
@@ -672,12 +762,12 @@ function makeGeometry(type, segs) {
   }
 }
 
-function addShape(type, posX = null, posY = DEFAULT_Y, posZ = null) {
+function addShape(type, posX = null, posY = DEFAULT_Y, posZ = null, customColor = null) {
   objCounter++;
   const segs = parseInt(document.getElementById('segSlider').value);
   const geo = makeGeometry(type, segs);
   const mat = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(currentColor),
+    color: new THREE.Color(customColor || currentColor),
     roughness: 0.6,
     metalness: 0.1,
     side: THREE.DoubleSide,
@@ -688,8 +778,8 @@ function addShape(type, posX = null, posY = DEFAULT_Y, posZ = null) {
   mesh.receiveShadow = true;
   
   // Position at Y=1 by default with optional XZ scatter
-  if (posX === null) posX = (Math.random() - 0.5) * 8;
-  if (posZ === null) posZ = (Math.random() - 0.5) * 8;
+  if (posX === null) posX = (Math.random() - 0.5) * 10;
+  if (posZ === null) posZ = (Math.random() - 0.5) * 10;
   mesh.position.set(posX, posY, posZ);
 
   const wireMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true, transparent: true, opacity: 0.25 });
@@ -707,41 +797,28 @@ function addShape(type, posX = null, posY = DEFAULT_Y, posZ = null) {
   return obj;
 }
 
-// Populate with 20 random objects
-function populate20Objects() {
-  const count = 20;
-  const cols = 5; // 5x4 grid
-  const rows = 4;
-  const spacing = 2.5;
+// Initialize library grid
+function initLibrary() {
+  const libraryGrid = document.getElementById('libraryGrid');
+  libraryGrid.innerHTML = '';
   
-  // Save current color
-  const savedColor = currentColor;
-  
-  for (let i = 0; i < count; i++) {
-    // Cycle through colors
-    currentColor = COLORS[i % COLORS.length];
-    
-    // Choose random shape type
-    const type = SHAPE_TYPES[Math.floor(Math.random() * SHAPE_TYPES.length)];
-    
-    // Grid layout with some randomness
-    const gridX = (i % cols) - (cols-1)/2;
-    const gridZ = Math.floor(i / cols) - (rows-1)/2;
-    
-    // Add random offset
-    const x = gridX * spacing + (Math.random() - 0.5) * 0.8;
-    const z = gridZ * spacing + (Math.random() - 0.5) * 0.8;
-    
-    addShape(type, x, DEFAULT_Y, z);
-  }
-  
-  // Restore color
-  currentColor = savedColor;
-  
-  // Adjust camera to see everything
-  orbit.target.set(0, DEFAULT_Y, 0);
-  orbit.radius = 12;
-  updateCamera();
+  OBJECT_LIBRARY.forEach((item, index) => {
+    const libItem = document.createElement('div');
+    libItem.className = 'library-item';
+    libItem.innerHTML = `
+      <div class="library-preview" style="color: ${item.color}">${item.icon}</div>
+      <div class="library-name">${item.name}</div>
+      <div class="library-type">${item.type}</div>
+    `;
+    libItem.onclick = () => {
+      // Add object from library at random position
+      currentColor = item.color;
+      const obj = addShape(item.type, (Math.random() - 0.5) * 8, DEFAULT_Y, (Math.random() - 0.5) * 8, item.color);
+      obj.name = item.name + '_' + obj.id;
+      updateSceneList();
+    };
+    libraryGrid.appendChild(libItem);
+  });
 }
 
 function selectObject(obj) {
@@ -1010,7 +1087,7 @@ function clearScene() {
   updateStats();
 }
 function resetCamera() {
-  orbit.theta = 0.8; orbit.phi = 0.9; orbit.radius = 15;
+  orbit.theta = 0.8; orbit.phi = 0.9; orbit.radius = 18;
   orbit.target.set(0, DEFAULT_Y, 0);
   updateCamera();
 }
@@ -1025,7 +1102,6 @@ window.addEventListener('keydown', e => {
   if (e.key === 'r') setTool('rotate');
   if (e.key === 's' && !e.ctrlKey) setTool('scale');
   if (e.key === 'Escape') { setTool('select'); selectObject(null); }
-  if (e.key === 'p' || e.key === 'P') populate20Objects();
 });
 
 // ── GIZMO ──────────────────────────────────────────────────────────────────
@@ -1080,11 +1156,27 @@ function animate() {
 }
 animate();
 
-// ── INIT: Populate with 20 objects on Y=1 ──────────────────────────────────
+// ── INIT: Initialize library and add default objects ─────────────────────
 setTimeout(() => {
-  populate20Objects();
+  initLibrary();
+  
+  // Add 5 default objects as examples
+  currentColor = '#7c5cfc';
+  addShape('box', -4, DEFAULT_Y, -3);
+  currentColor = '#5cfca0';
+  addShape('sphere', 4, DEFAULT_Y, -3);
+  currentColor = '#fc5c7d';
+  addShape('cylinder', -4, DEFAULT_Y, 3);
+  currentColor = '#f7d060';
+  addShape('cone', 4, DEFAULT_Y, 3);
+  currentColor = '#5cd9fc';
+  addShape('torus', 0, DEFAULT_Y, 0);
+  
   // Set initial Y in transform UI to 1
   document.getElementById('py').value = DEFAULT_Y;
+  
+  // Update stats
+  updateStats();
 }, 100);
 </script>
 </body>
